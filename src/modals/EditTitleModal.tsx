@@ -27,13 +27,19 @@ export function EditTitleModal({
   const [total, setTotal] = useState(1);
   const [edition, setEdition] = useState<Edition>('english');
   const [status, setStatus] = useState<ReadingStatus>('reading');
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
   useEffect(() => {
-    if (!visible || !title) return;
+    if (!visible) {
+      setDeleteConfirmVisible(false);
+      return;
+    }
+    if (!title) return;
     setName(title.title);
     setTotal(title.totalVolumes);
     setEdition(title.edition);
     setStatus(title.status);
+    setDeleteConfirmVisible(false);
   }, [title, visible]);
 
   if (!title) return null;
@@ -59,21 +65,13 @@ export function EditTitleModal({
   }
 
   function confirmDelete() {
-    Alert.alert(
-      'Remove from shelf?',
-      `This deletes ${title!.title} and its reading progress from this device.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Remove',
-          style: 'destructive',
-          onPress: () => {
-            onDelete();
-            onClose();
-          },
-        },
-      ],
-    );
+    setDeleteConfirmVisible(true);
+  }
+
+  function removeTitle() {
+    onDelete();
+    setDeleteConfirmVisible(false);
+    onClose();
   }
 
   return (
@@ -196,6 +194,44 @@ export function EditTitleModal({
             </Pressable>
           </ScrollView>
         </View>
+
+        {deleteConfirmVisible ? (
+          <View style={styles.confirmLayer} accessibilityViewIsModal>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Cancel removal"
+              style={StyleSheet.absoluteFill}
+              onPress={() => setDeleteConfirmVisible(false)}
+            />
+            <View style={styles.confirmCard}>
+              <View style={styles.confirmIcon}>
+                <Ionicons name="trash-outline" size={22} color={colors.danger} />
+              </View>
+              <Text style={styles.confirmTitle}>Remove {title.title}?</Text>
+              <Text style={styles.confirmText}>
+                This removes the series and all its reading progress from this device.
+              </Text>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setDeleteConfirmVisible(false)}
+                  style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.cancelText}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={`Remove ${title.title} from shelf`}
+                  onPress={removeTitle}
+                  style={({ pressed }) => [styles.confirmDeleteButton, pressed && styles.pressed]}
+                >
+                  <Ionicons name="trash-outline" size={17} color={colors.text} />
+                  <Text style={styles.confirmDeleteText}>Remove</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        ) : null}
       </View>
     </Modal>
   );
@@ -398,5 +434,80 @@ const styles = StyleSheet.create({
     color: colors.danger,
     fontSize: 13,
     fontWeight: '800',
+  },
+  confirmLayer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.76)',
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 420,
+    padding: spacing.xl,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.dangerSoft,
+    backgroundColor: colors.surface,
+  },
+  confirmIcon: {
+    width: 44,
+    height: 44,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+    backgroundColor: colors.dangerSoft,
+  },
+  confirmTitle: {
+    color: colors.text,
+    fontSize: 18,
+    fontWeight: '900',
+  },
+  confirmText: {
+    marginTop: spacing.sm,
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 18,
+  },
+  confirmActions: {
+    marginTop: spacing.xl,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  cancelButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+  },
+  cancelText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  confirmDeleteButton: {
+    minHeight: 46,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.danger,
+  },
+  confirmDeleteText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
   },
 });
