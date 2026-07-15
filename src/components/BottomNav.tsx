@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { colors, radii, shadows, spacing } from '../theme';
 
@@ -67,7 +67,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: spacing.xl,
+    bottom: Platform.select<ViewStyle['bottom']>({
+      web: 'calc(env(safe-area-inset-bottom) + 20px)' as unknown as number,
+      default: spacing.xl,
+    }),
     height: 70,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',

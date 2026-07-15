@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 import { BottomNav, MainTab } from './src/components/BottomNav';
 import { useLibrary } from './src/hooks/useLibrary';
@@ -76,7 +76,7 @@ export default function App() {
 
   if (loading) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <View style={[styles.safeArea, styles.topSafeArea]}>
         <StatusBar style="light" />
         <View style={styles.loading}>
           <View style={styles.loadingMark}>
@@ -85,12 +85,12 @@ export default function App() {
           <ActivityIndicator color={colors.accent} />
           <Text style={styles.loadingText}>Opening your shelf…</Text>
         </View>
-      </SafeAreaView>
+      </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <View style={[styles.safeArea, styles.topSafeArea]}>
       <StatusBar style="light" />
 
       {selected ? (
@@ -161,16 +161,19 @@ export default function App() {
           if (selected) removeTitle(selected.id);
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    paddingBottom: 0,
     backgroundColor: colors.background,
   },
+  topSafeArea: Platform.select<ViewStyle>({
+    web: { paddingTop: 'env(safe-area-inset-top)' as unknown as number },
+    default: { paddingTop: 0 },
+  }),
   main: {
     flex: 1,
     backgroundColor: colors.background,
