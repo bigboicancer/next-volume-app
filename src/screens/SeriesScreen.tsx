@@ -9,6 +9,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from 'react-native';
 
@@ -45,6 +46,8 @@ export function SeriesScreen({
   onToggleOwnedVolume,
   onUpdate,
 }: SeriesScreenProps) {
+  const { width } = useWindowDimensions();
+  const compactVolumeHeader = width < 560;
   const [refreshing, setRefreshing] = useState(false);
   const [volumeMode, setVolumeMode] = useState<'read' | 'owned'>('read');
   const progress = progressOf(title);
@@ -201,8 +204,8 @@ export function SeriesScreen({
             </View>
           )}
 
-          <View style={styles.sectionHeader}>
-            <View>
+          <View style={[styles.sectionHeader, compactVolumeHeader && styles.sectionHeaderCompact]}>
+            <View style={styles.sectionHeaderCopy}>
               <Text style={styles.sectionTitle}>Volumes</Text>
               <Text style={styles.sectionHint}>
                 {volumeMode === 'read'
@@ -210,12 +213,22 @@ export function SeriesScreen({
                   : 'Tap any volume to add or remove it from your collection.'}
               </Text>
             </View>
-            <View style={styles.volumeModeControl} accessibilityRole="tablist">
+            <View
+              style={[
+                styles.volumeModeControl,
+                compactVolumeHeader && styles.volumeModeControlCompact,
+              ]}
+              accessibilityRole="tablist"
+            >
               <Pressable
                 accessibilityRole="tab"
                 accessibilityState={{ selected: volumeMode === 'read' }}
                 onPress={() => setVolumeMode('read')}
-                style={[styles.volumeModeButton, volumeMode === 'read' && styles.volumeModeSelected]}
+                style={[
+                  styles.volumeModeButton,
+                  compactVolumeHeader && styles.volumeModeButtonCompact,
+                  volumeMode === 'read' && styles.volumeModeSelected,
+                ]}
               >
                 <Text style={[styles.volumeModeText, volumeMode === 'read' && styles.volumeModeTextSelected]}>
                   Read
@@ -225,7 +238,11 @@ export function SeriesScreen({
                 accessibilityRole="tab"
                 accessibilityState={{ selected: volumeMode === 'owned' }}
                 onPress={() => setVolumeMode('owned')}
-                style={[styles.volumeModeButton, volumeMode === 'owned' && styles.volumeModeSelected]}
+                style={[
+                  styles.volumeModeButton,
+                  compactVolumeHeader && styles.volumeModeButtonCompact,
+                  volumeMode === 'owned' && styles.volumeModeSelected,
+                ]}
               >
                 <Text style={[styles.volumeModeText, volumeMode === 'owned' && styles.volumeModeTextSelected]}>
                   Owned
@@ -578,6 +595,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  sectionHeaderCompact: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+  },
+  sectionHeaderCopy: {
+    flex: 1,
+    minWidth: 0,
   },
   sectionTitle: {
     color: colors.text,
@@ -596,12 +622,18 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.surface,
   },
+  volumeModeControlCompact: {
+    width: '100%',
+  },
   volumeModeButton: {
     minHeight: 34,
     paddingHorizontal: spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: radii.sm,
+  },
+  volumeModeButtonCompact: {
+    flex: 1,
   },
   volumeModeSelected: {
     backgroundColor: colors.surfaceRaised,
