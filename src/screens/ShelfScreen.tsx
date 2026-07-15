@@ -34,6 +34,7 @@ interface ShelfScreenProps {
 }
 
 type ShelfFilter = 'all' | MediaKind;
+type ShelfSort = 'recent' | 'title' | 'progress';
 
 function NextUpCard({
   title,
@@ -113,6 +114,7 @@ export function ShelfScreen({
 }: ShelfScreenProps) {
   const { width } = useWindowDimensions();
   const [filter, setFilter] = useState<ShelfFilter>('all');
+  const [sort, setSort] = useState<ShelfSort>('recent');
   const [query, setQuery] = useState('');
 
   const nextUp = useMemo(
@@ -125,16 +127,23 @@ export function ShelfScreen({
 
   const filtered = useMemo(() => {
     const clean = query.trim().toLowerCase();
-    return titles
+    const matches = titles
       .filter((title) => filter === 'all' || title.kind === filter)
       .filter(
         (title) =>
           !clean ||
           title.title.toLowerCase().includes(clean) ||
           title.alternativeTitle?.toLowerCase().includes(clean),
-      )
-      .sort((a, b) => lastActivity(b) - lastActivity(a));
-  }, [filter, query, titles]);
+      );
+
+    return [...matches].sort((a, b) => {
+      if (sort === 'title') return a.title.localeCompare(b.title);
+      if (sort === 'progress') {
+        return progressOf(b) - progressOf(a) || a.title.localeCompare(b.title);
+      }
+      return lastActivity(b) - lastActivity(a) || a.title.localeCompare(b.title);
+    });
+  }, [filter, query, sort, titles]);
 
   const availableWidth = Math.min(width, 1040) - spacing.xl * 2;
   const columns = width >= 900 ? 4 : width >= 650 ? 3 : 2;
@@ -247,6 +256,31 @@ export function ShelfScreen({
             onPress={() => setFilter('light-novel')}
           />
         </ScrollView>
+
+        <View style={styles.sortRow}>
+          <Text style={styles.sortLabel}>Sort</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.sortOptions}
+          >
+            <FilterChip
+              label="Recent"
+              selected={sort === 'recent'}
+              onPress={() => setSort('recent')}
+            />
+            <FilterChip
+              label="A–Z"
+              selected={sort === 'title'}
+              onPress={() => setSort('title')}
+            />
+            <FilterChip
+              label="Progress"
+              selected={sort === 'progress'}
+              onPress={() => setSort('progress')}
+            />
+          </ScrollView>
+        </View>
 
         {filtered.length ? (
           <View style={styles.grid}>
@@ -557,7 +591,21 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   filters: {
-    paddingBottom: spacing.lg,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  sortRow: {
+    marginBottom: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  sortLabel: {
+    color: colors.textDim,
+    fontSize: 12,
+    fontWeight: '800',
+  },
+  sortOptions: {
     gap: spacing.sm,
   },
   grid: {
