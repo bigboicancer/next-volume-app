@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { clearAllSavedData, loadLibrary, saveLibrary } from '../storage';
 import { LibraryTitle, TitleDraft } from '../types';
-import { makeId, rangeThrough, statusAfterProgress } from '../utils';
+import { ensureReadVolumesOwned, makeId, rangeThrough, statusAfterProgress } from '../utils';
 
 export function useLibrary() {
   const [titles, setTitles] = useState<LibraryTitle[]>([]);
@@ -31,8 +31,15 @@ export function useLibrary() {
 
   const addTitle = useCallback((draft: TitleDraft) => {
     const now = Date.now();
+    const ownedVolumeNumbers = ensureReadVolumesOwned(
+      draft.ownedVolumeNumbers,
+      draft.readVolumes,
+      draft.totalVolumes,
+    );
     const item: LibraryTitle = {
       ...draft,
+      ownedVolumes: ownedVolumeNumbers.length,
+      ownedVolumeNumbers,
       id: makeId(),
       createdAt: now,
       updatedAt: now,
@@ -50,12 +57,17 @@ export function useLibrary() {
           (update.ownedVolumes !== undefined
             ? rangeThrough(Math.max(0, Math.floor(update.ownedVolumes)))
             : title.ownedVolumeNumbers);
-        const nextOwnedNumbers = [...new Set(requestedOwned)]
+        const requestedOwnedNumbers = [...new Set(requestedOwned)]
           .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= nextTotal)
           .sort((a, b) => a - b);
         const nextRead = (update.readVolumes ?? title.readVolumes)
           .filter((volume) => volume <= nextTotal)
           .sort((a, b) => a - b);
+        const nextOwnedNumbers = ensureReadVolumesOwned(
+          requestedOwnedNumbers,
+          nextRead,
+          nextTotal,
+        );
         return {
           ...title,
           ...update,
@@ -75,6 +87,7 @@ export function useLibrary() {
       current.map((title) => {
         if (title.id !== id || volume < 1 || volume > title.totalVolumes) return title;
         const exists = title.readVolumes.includes(volume);
+        if (!exists && !title.ownedVolumeNumbers.includes(volume)) return title;
         const readVolumes = exists
           ? title.readVolumes.filter((item) => item !== volume)
           : [...title.readVolumes, volume].sort((a, b) => a - b);
@@ -98,6 +111,7 @@ export function useLibrary() {
       current.map((title) => {
         if (title.id !== id || volume < 1 || volume > title.totalVolumes) return title;
         const exists = title.ownedVolumeNumbers.includes(volume);
+        if (exists && title.readVolumes.includes(volume)) return title;
         const ownedVolumeNumbers = exists
           ? title.ownedVolumeNumbers.filter((item) => item !== volume)
           : [...title.ownedVolumeNumbers, volume].sort((a, b) => a - b);

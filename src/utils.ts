@@ -66,6 +66,21 @@ export function ownedVolumeCount(title: LibraryTitle): number {
   return ownedVolumeNumbersOf(title).length;
 }
 
+export function unownedReadVolumes(readVolumes: number[], ownedVolumes: number[]): number[] {
+  const owned = new Set(ownedVolumes);
+  return [...new Set(readVolumes)].filter((volume) => !owned.has(volume)).sort((a, b) => a - b);
+}
+
+export function ensureReadVolumesOwned(
+  ownedVolumes: number[],
+  readVolumes: number[],
+  maximum: number,
+): number[] {
+  return [...new Set([...ownedVolumes, ...readVolumes])]
+    .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= maximum)
+    .sort((a, b) => a - b);
+}
+
 export function progressOf(title: LibraryTitle): number {
   if (title.totalVolumes <= 0) return 0;
   return clamp(title.readVolumes.length / title.totalVolumes, 0, 1);

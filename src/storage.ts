@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { LibrarySnapshot, LibraryTitle } from './types';
-import { clamp, rangeThrough, statusAfterProgress } from './utils';
+import { clamp, ensureReadVolumesOwned, rangeThrough, statusAfterProgress } from './utils';
 
 const STORAGE_KEY = '@next-volume/library/v1';
 export const INSTALL_PROMPT_DISMISSED_KEY = '@next-volume/install-prompt-dismissed/v1';
@@ -22,7 +22,7 @@ function sanitiseTitle(value: LibraryTitle): LibraryTitle {
     0,
     totalVolumes,
   );
-  const ownedVolumeNumbers = [
+  const savedOwnedVolumeNumbers = [
     ...new Set(
       Array.isArray(value.ownedVolumeNumbers)
         ? value.ownedVolumeNumbers.map(Number)
@@ -35,6 +35,11 @@ function sanitiseTitle(value: LibraryTitle): LibraryTitle {
     .map(Number)
     .filter((volume) => Number.isInteger(volume) && volume > 0 && volume <= totalVolumes)
     .sort((a, b) => a - b);
+  const ownedVolumeNumbers = ensureReadVolumesOwned(
+    savedOwnedVolumeNumbers,
+    readVolumes,
+    totalVolumes,
+  );
 
   return {
     ...value,

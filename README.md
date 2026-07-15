@@ -13,6 +13,7 @@ Next Volume is a private, local-first manga and light-novel tracker for iPhone, 
 - Separates the full series total from the exact volumes you own, including gaps.
 - Lets you enter owned volumes as individual numbers or ranges such as `1-3, 7, 12-14`.
 - Tracks every volume separately rather than storing only a single progress number.
+- Requires a volume to be owned before it can be marked as read.
 - Sorts your library by recent activity, title or reading progress.
 - Provides a one-tap **Finish next volume** action.
 - Queues the next unread volume you own while measuring completion against the full series total.

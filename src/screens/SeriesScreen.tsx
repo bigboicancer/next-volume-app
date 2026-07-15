@@ -206,7 +206,7 @@ export function SeriesScreen({
               <Text style={styles.sectionTitle}>Volumes</Text>
               <Text style={styles.sectionHint}>
                 {volumeMode === 'read'
-                  ? 'Tap a volume to mark it read or unread.'
+                  ? 'Only owned volumes can be marked read.'
                   : 'Tap any volume to add or remove it from your collection.'}
               </Text>
             </View>
@@ -245,11 +245,24 @@ export function SeriesScreen({
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selected }}
                   accessibilityLabel={`Volume ${volume}, ${read ? 'read' : 'unread'}, ${owned ? 'owned' : 'not owned'}`}
-                  onPress={() =>
-                    volumeMode === 'read'
-                      ? onToggleVolume(volume)
-                      : onToggleOwnedVolume(volume)
-                  }
+                  onPress={() => {
+                    if (volumeMode === 'read' && !owned) {
+                      Alert.alert(
+                        'You do not own this volume',
+                        `Mark volume ${volume} as owned before marking it read.`,
+                      );
+                      return;
+                    }
+                    if (volumeMode === 'owned' && owned && read) {
+                      Alert.alert(
+                        'This volume is marked read',
+                        `Mark volume ${volume} unread before removing it from ownership.`,
+                      );
+                      return;
+                    }
+                    if (volumeMode === 'read') onToggleVolume(volume);
+                    else onToggleOwnedVolume(volume);
+                  }}
                   style={({ pressed }) => [
                     styles.volume,
                     volumeMode === 'read' && !owned && !read && styles.volumeUnowned,

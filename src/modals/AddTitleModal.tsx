@@ -26,7 +26,14 @@ import {
   TitleDraft,
   VolumeLookup,
 } from '../types';
-import { clamp, kindLabel, parseVolumeSelection, rangeThrough } from '../utils';
+import {
+  clamp,
+  formatVolumeSelection,
+  kindLabel,
+  parseVolumeSelection,
+  rangeThrough,
+  unownedReadVolumes,
+} from '../utils';
 
 type AddMode = 'search' | 'confirm' | 'manual';
 type CatalogFilter = 'all' | MediaKind;
@@ -197,6 +204,14 @@ export function AddTitleModal({
     if (!selected) return;
     const readVolumes = rangeThrough(Math.min(readThrough, totalVolumes));
     const ownedVolumeNumbers = parseVolumeSelection(ownedInput, totalVolumes);
+    const missingOwnership = unownedReadVolumes(readVolumes, ownedVolumeNumbers);
+    if (missingOwnership.length) {
+      Alert.alert(
+        'Own read volumes first',
+        `Add ${formatVolumeSelection(missingOwnership)} to your owned volumes, or lower “Already read through”.`,
+      );
+      return;
+    }
     onAdd({
       sourceId: selected.sourceId,
       sourceUrl: selected.sourceUrl,
@@ -232,6 +247,14 @@ export function AddTitleModal({
     }
     const readVolumes = rangeThrough(Math.min(readThrough, totalVolumes));
     const ownedVolumeNumbers = parseVolumeSelection(ownedInput, totalVolumes);
+    const missingOwnership = unownedReadVolumes(readVolumes, ownedVolumeNumbers);
+    if (missingOwnership.length) {
+      Alert.alert(
+        'Own read volumes first',
+        `Add ${formatVolumeSelection(missingOwnership)} to your owned volumes, or lower “Already read through”.`,
+      );
+      return;
+    }
     onAdd({
       title: cleanTitle,
       kind: manualKind,

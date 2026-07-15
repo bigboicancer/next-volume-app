@@ -6,11 +6,13 @@ import {
 } from '../src/services/catalog';
 import { LibraryTitle } from '../src/types';
 import {
+  ensureReadVolumesOwned,
   formatVolumeSelection,
   ownedProgressOf,
   ownedReadCount,
   parseVolumeSelection,
   statusAfterProgress,
+  unownedReadVolumes,
 } from '../src/utils';
 
 function expectEqual(actual: unknown, expected: unknown, label: string) {
@@ -53,6 +55,16 @@ expectEqual(
   'random owned-volume ranges',
 );
 expectEqual(formatVolumeSelection(randomVolumes), '1-3, 7, 12-14', 'owned-volume formatting');
+expectEqual(
+  unownedReadVolumes([1, 2, 5], [1, 5]),
+  [2],
+  'unowned read-volume detection',
+);
+expectEqual(
+  ensureReadVolumesOwned([1, 5], [1, 2, 5], 10),
+  [1, 2, 5],
+  'older read volumes migrate to owned',
+);
 
 async function expectProviderResilience() {
   const originalFetch = globalThis.fetch;

@@ -11,6 +11,7 @@ import {
   parseVolumeSelection,
   rangeThrough,
   statusLabel,
+  unownedReadVolumes,
 } from '../utils';
 
 interface EditTitleModalProps {
@@ -64,6 +65,14 @@ export function EditTitleModal({
         ? rangeThrough(total)
         : title!.readVolumes.filter((volume) => volume <= total);
     const ownedVolumeNumbers = parseVolumeSelection(ownedInput, total);
+    const missingOwnership = unownedReadVolumes(readVolumes, ownedVolumeNumbers);
+    if (missingOwnership.length) {
+      Alert.alert(
+        'Read volumes must stay owned',
+        `Volumes ${formatVolumeSelection(missingOwnership)} are marked as read. Mark them unread before removing them from ownership.`,
+      );
+      return;
+    }
     onSave({
       title: cleanName,
       totalVolumes: total,
