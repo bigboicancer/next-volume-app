@@ -123,6 +123,8 @@ Reading progress is stored locally using AsyncStorage. The app only contacts pub
 
 Use **Stats → Data & backup** to export the complete local shelf as a JSON backup. Importing a backup in another browser restores titles, ownership, progress, dates and descriptions after confirmation.
 
+Four saved colour presets are available under **Stats → Appearance**.
+
 ## Project structure
 
 ```text

@@ -5,7 +5,14 @@ import { useState } from 'react';
 
 import { SelectedBackup } from '../backup';
 import { ProgressBar } from '../components/ProgressBar';
-import { colors, radii, spacing } from '../theme';
+import {
+  activeThemeId,
+  colors,
+  radii,
+  selectThemePreset,
+  spacing,
+  themePresets,
+} from '../theme';
 import { LibraryTitle } from '../types';
 import {
   nextUnreadOwnedVolume,
@@ -266,6 +273,41 @@ export function StatsScreen({
             </Text>
           </View>
         )}
+
+          <View style={styles.appearanceSection}>
+            <Text style={styles.sectionTitle}>Appearance</Text>
+            <View style={styles.themeGrid}>
+              {themePresets.map((preset) => {
+                const selected = preset.id === activeThemeId;
+                return (
+                  <Pressable
+                    key={preset.id}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: selected }}
+                    onPress={() => selectThemePreset(preset.id)}
+                    style={({ pressed }) => [
+                      styles.themeOption,
+                      selected && styles.themeOptionSelected,
+                      pressed && styles.pressed,
+                    ]}
+                  >
+                    <View style={styles.themeSwatches}>
+                      <View style={[styles.themeSwatch, { backgroundColor: preset.colors.background }]} />
+                      <View style={[styles.themeSwatch, { backgroundColor: preset.colors.surfaceRaised }]} />
+                      <View style={[styles.themeSwatch, { backgroundColor: preset.colors.accent }]} />
+                    </View>
+                    <View style={styles.themeCopy}>
+                      <Text style={styles.themeName}>{preset.label}</Text>
+                      <Text style={styles.themeDescription}>{preset.description}</Text>
+                    </View>
+                    {selected ? (
+                      <Ionicons name="checkmark-circle" size={21} color={colors.accent} />
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
 
           <View style={styles.dataSection}>
             <Text style={styles.sectionTitle}>Data & backup</Text>
@@ -641,6 +683,56 @@ const styles = StyleSheet.create({
   },
   dataSection: {
     marginTop: spacing.xxl,
+  },
+  appearanceSection: {
+    marginTop: spacing.xxl,
+  },
+  themeGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  themeOption: {
+    minWidth: '47%',
+    minHeight: 92,
+    flex: 1,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  themeOptionSelected: {
+    borderColor: colors.accent,
+    backgroundColor: colors.surfaceRaised,
+  },
+  themeSwatches: {
+    width: 32,
+    gap: 3,
+  },
+  themeSwatch: {
+    width: 32,
+    height: 9,
+    borderRadius: radii.round,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: 'rgba(255,255,255,0.18)',
+  },
+  themeCopy: {
+    flex: 1,
+  },
+  themeName: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  themeDescription: {
+    marginTop: 2,
+    color: colors.textDim,
+    fontSize: 9,
+    lineHeight: 13,
   },
   backupCard: {
     marginBottom: spacing.md,

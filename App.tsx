@@ -10,7 +10,7 @@ import { SeriesScreen } from './src/screens/SeriesScreen';
 import { ShelfScreen } from './src/screens/ShelfScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { loadShelfPreferences, saveShelfPreferences } from './src/storage';
-import { colors } from './src/theme';
+import { applyDocumentTheme, colors } from './src/theme';
 import { ShelfPreferences } from './src/types';
 
 export default function App() {
@@ -38,6 +38,10 @@ export default function App() {
   });
   const shelfPreferencesLoaded = useRef(false);
   const selected = selectedId ? getTitle(selectedId) : undefined;
+
+  useEffect(() => {
+    applyDocumentTheme();
+  }, []);
 
   useEffect(() => {
     let active = true;

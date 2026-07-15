@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { sanitiseLibraryTitles } from './libraryData';
+import { THEME_STORAGE_KEY } from './theme';
 import { LibrarySnapshot, LibraryTitle, ShelfPreferences } from './types';
 
 const STORAGE_KEY = '@next-volume/library/v1';
@@ -56,4 +57,5 @@ export async function clearAllSavedData(): Promise<void> {
     SHELF_PREFERENCES_KEY,
     INSTALL_PROMPT_DISMISSED_KEY,
   ]);
+  if (typeof window !== 'undefined') window.localStorage.removeItem(THEME_STORAGE_KEY);
 }
