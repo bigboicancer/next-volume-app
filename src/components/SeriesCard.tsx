@@ -44,7 +44,7 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
           {title.title}
         </Text>
         <Text style={styles.meta}>
-          {title.readVolumes.length} read · {ownedVolumeCount(title)} owned · {title.totalVolumes} total
+          {title.readVolumes.length} read · {ownedVolumeCount(title)} owned
         </Text>
         <ProgressBar progress={progress} />
 

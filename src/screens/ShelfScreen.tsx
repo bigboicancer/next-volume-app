@@ -67,12 +67,12 @@ function NextUpCard({
           {next ? `Volume ${next} is ready when you are` : 'Every listed volume is finished'}
         </Text>
         <Text style={styles.nextOwnership}>
-          {ownedVolumeCount(title)} owned · {title.totalVolumes} total to read
+          {ownedVolumeCount(title)} owned
         </Text>
         <View style={styles.nextProgress}>
           <ProgressBar progress={progressOf(title)} color={colors.accent} height={8} />
           <Text style={styles.nextProgressLabel}>
-            {title.readVolumes.length}/{title.totalVolumes}
+            {Math.round(progressOf(title) * 100)}%
           </Text>
         </View>
         <View style={styles.nextActions}>
@@ -150,7 +150,6 @@ export function ShelfScreen({
   const cardWidth = Math.max(145, (availableWidth - spacing.md * (columns - 1)) / columns);
   const readCount = titles.reduce((sum, title) => sum + title.readVolumes.length, 0);
   const ownedCount = titles.reduce((sum, title) => sum + ownedVolumeCount(title), 0);
-  const totalCount = titles.reduce((sum, title) => sum + title.totalVolumes, 0);
   const everySeriesComplete = titles.every((title) => !nextUnreadVolume(title));
 
   return (
@@ -208,11 +207,6 @@ export function ShelfScreen({
           <View style={styles.quickStat}>
             <Text style={styles.quickValue}>{ownedCount}</Text>
             <Text style={styles.quickLabel}>volumes owned</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.quickStat}>
-            <Text style={styles.quickValue}>{totalCount}</Text>
-            <Text style={styles.quickLabel}>total to read</Text>
           </View>
         </View>
 
