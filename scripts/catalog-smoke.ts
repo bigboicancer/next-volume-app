@@ -4,7 +4,8 @@ import {
   normaliseSeriesTitle,
   searchCatalog,
 } from '../src/services/catalog';
-import { statusAfterProgress } from '../src/utils';
+import { LibraryTitle } from '../src/types';
+import { ownedProgressOf, ownedReadCount, statusAfterProgress } from '../src/utils';
 
 function expectEqual(actual: unknown, expected: unknown, label: string) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -31,6 +32,13 @@ expectEqual(
   'reading',
   'owned volumes do not complete a longer series',
 );
+const ownedShelfFixture = {
+  ownedVolumes: 6,
+  totalVolumes: 23,
+  readVolumes: [1, 2, 3, 4, 5, 6, 7],
+} as LibraryTitle;
+expectEqual(ownedReadCount(ownedShelfFixture), 6, 'unowned read volumes excluded from shelf stats');
+expectEqual(ownedProgressOf(ownedShelfFixture), 1, 'owned shelf progress');
 
 async function expectProviderResilience() {
   const originalFetch = globalThis.fetch;

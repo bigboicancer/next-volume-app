@@ -17,6 +17,15 @@ export function progressOf(title: LibraryTitle): number {
   return clamp(title.readVolumes.length / title.totalVolumes, 0, 1);
 }
 
+export function ownedReadCount(title: LibraryTitle): number {
+  return title.readVolumes.filter((volume) => volume <= title.ownedVolumes).length;
+}
+
+export function ownedProgressOf(title: LibraryTitle): number {
+  if (title.ownedVolumes <= 0) return 0;
+  return clamp(ownedReadCount(title) / title.ownedVolumes, 0, 1);
+}
+
 export function nextUnreadVolume(title: LibraryTitle): number | undefined {
   const read = new Set(title.readVolumes);
   return rangeThrough(title.totalVolumes).find((volume) => !read.has(volume));

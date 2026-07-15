@@ -6,7 +6,7 @@ import { useState } from 'react';
 import { ProgressBar } from '../components/ProgressBar';
 import { colors, radii, spacing } from '../theme';
 import { LibraryTitle } from '../types';
-import { nextUnreadVolume, progressOf } from '../utils';
+import { nextUnreadOwnedVolume, ownedProgressOf, ownedReadCount } from '../utils';
 
 interface StatsScreenProps {
   titles: LibraryTitle[];
@@ -44,10 +44,9 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
   const [eraseConfirmVisible, setEraseConfirmVisible] = useState(false);
   const [erasing, setErasing] = useState(false);
   const [eraseError, setEraseError] = useState('');
-  const read = titles.reduce((sum, title) => sum + title.readVolumes.length, 0);
+  const read = titles.reduce((sum, title) => sum + ownedReadCount(title), 0);
   const owned = titles.reduce((sum, title) => sum + title.ownedVolumes, 0);
-  const total = titles.reduce((sum, title) => sum + title.totalVolumes, 0);
-  const remaining = Math.max(0, total - read);
+  const remaining = Math.max(0, owned - read);
   const completed = titles.filter((title) => title.status === 'completed').length;
   const thisWeek = titles.reduce(
     (sum, title) =>
@@ -56,12 +55,12 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
         .length,
     0,
   );
-  const overall = total ? read / total : 0;
+  const overall = owned ? read / owned : 0;
   const manga = titles.filter((title) => title.kind === 'manga');
   const novels = titles.filter((title) => title.kind === 'light-novel');
   const nearlyFinished = [...titles]
-    .filter((title) => nextUnreadVolume(title) && progressOf(title) >= 0.5)
-    .sort((a, b) => progressOf(b) - progressOf(a))
+    .filter((title) => nextUnreadOwnedVolume(title) && ownedProgressOf(title) >= 0.5)
+    .sort((a, b) => ownedProgressOf(b) - ownedProgressOf(a))
     .slice(0, 4);
 
   function openEraseConfirmation() {
@@ -101,7 +100,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
         <LinearGradient colors={['#3A315A', '#1A283B']} style={styles.hero}>
           <View style={styles.heroTop}>
             <View>
-              <Text style={styles.heroLabel}>OVERALL SHELF</Text>
+              <Text style={styles.heroLabel}>OWNED SHELF</Text>
               <Text style={styles.heroValue}>{Math.round(overall * 100)}%</Text>
             </View>
             <View style={styles.heroRing}>
@@ -110,14 +109,16 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
           </View>
           <ProgressBar progress={overall} color={colors.accent} height={10} />
           <Text style={styles.heroCaption}>
-            {total
-              ? `${read} read · ${owned} owned · ${total} total to read`
-              : 'Add a title to begin tracking.'}
+            {owned
+              ? `${read} of ${owned} owned volumes read`
+              : titles.length
+                ? 'Mark volumes as owned to measure your shelf.'
+                : 'Add a title to begin tracking.'}
           </Text>
         </LinearGradient>
 
         <View style={styles.statGrid}>
-          <StatCard icon="checkmark-done" value={read} label="Volumes read" tone={colors.green} />
+          <StatCard icon="checkmark-done" value={read} label="Owned volumes read" tone={colors.green} />
           <StatCard icon="albums-outline" value={owned} label="Volumes owned" tone={colors.blue} />
           <StatCard
             icon="hourglass-outline"
@@ -150,7 +151,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
               <Text style={styles.splitMeta}>{manga.length} series</Text>
             </View>
             <Text style={styles.splitValue}>
-              {manga.reduce((sum, title) => sum + title.readVolumes.length, 0)} read
+              {manga.reduce((sum, title) => sum + ownedReadCount(title), 0)} owned read
             </Text>
           </View>
           <View style={styles.splitDivider} />
@@ -163,7 +164,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
               <Text style={styles.splitMeta}>{novels.length} series</Text>
             </View>
             <Text style={styles.splitValue}>
-              {novels.reduce((sum, title) => sum + title.readVolumes.length, 0)} read
+              {novels.reduce((sum, title) => sum + ownedReadCount(title), 0)} owned read
             </Text>
           </View>
         </View>
@@ -172,7 +173,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
         {nearlyFinished.length ? (
           <View style={styles.nearlyCard}>
             {nearlyFinished.map((title, index) => {
-              const remainingForTitle = title.totalVolumes - title.readVolumes.length;
+              const remainingForTitle = title.ownedVolumes - ownedReadCount(title);
               return (
                 <View key={title.id}>
                   <View style={styles.nearlyRow}>
@@ -183,7 +184,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
                       <Text style={styles.nearlyTitle} numberOfLines={1}>
                         {title.title}
                       </Text>
-                      <ProgressBar progress={progressOf(title)} height={6} />
+                      <ProgressBar progress={ownedProgressOf(title)} height={6} />
                     </View>
                     <Text style={styles.nearlyRemaining}>
                       {remainingForTitle} {remainingForTitle === 1 ? 'left' : 'left'}
@@ -198,7 +199,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
           <View style={styles.noData}>
             <Ionicons name="flag-outline" size={27} color={colors.textDim} />
             <Text style={styles.noDataText}>
-              Titles over halfway complete will appear here.
+              Owned titles over halfway read will appear here.
             </Text>
           </View>
         )}
