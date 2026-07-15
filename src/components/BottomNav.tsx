@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: 0,
+    bottom: spacing.xl,
     height: 70,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
