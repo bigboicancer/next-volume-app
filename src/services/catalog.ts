@@ -1,6 +1,7 @@
 import { CatalogResult, MediaKind, VolumeLookup } from '../types';
 
 const JIKAN_BASE = 'https://api.jikan.moe/v4';
+const KITSU_BASE = 'https://kitsu.io/api/edge';
 const GOOGLE_BOOKS_BASE = 'https://www.googleapis.com/books/v1/volumes';
 const OPEN_LIBRARY_BASE = 'https://openlibrary.org/search.json';
 
@@ -25,6 +26,34 @@ interface JikanManga {
 
 interface JikanSearchResponse {
   data?: JikanManga[];
+}
+
+interface KitsuManga {
+  id: string;
+  attributes?: {
+    canonicalTitle?: string | null;
+    titles?: {
+      en?: string | null;
+      en_jp?: string | null;
+      en_us?: string | null;
+      ja_jp?: string | null;
+    };
+    subtype?: string | null;
+    volumeCount?: number | null;
+    status?: string | null;
+    averageRating?: string | null;
+    synopsis?: string | null;
+    posterImage?: {
+      original?: string | null;
+      large?: string | null;
+      medium?: string | null;
+      small?: string | null;
+    };
+  };
+}
+
+interface KitsuSearchResponse {
+  data?: KitsuManga[];
 }
 
 interface GoogleBookItem {
@@ -62,25 +91,35 @@ function requestType(filter: 'all' | MediaKind): string {
   return '';
 }
 
-export async function searchCatalog(
-  query: string,
-  filter: 'all' | MediaKind = 'all',
-  signal?: AbortSignal,
-): Promise<CatalogResult[]> {
-  const cleanQuery = query.trim();
-  if (cleanQuery.length < 2) return [];
+function wasUserAbort(signal?: AbortSignal): boolean {
+  return Boolean(signal?.aborted);
+}
 
-  const url = `${JIKAN_BASE}/manga?q=${encodeURIComponent(cleanQuery)}&limit=14&order_by=popularity&sort=asc${requestType(filter)}`;
-  const response = await fetch(url, { signal });
+async function fetchWithTimeout(
+  url: string,
+  init: RequestInit = {},
+  timeoutMs = 7_000,
+): Promise<Response> {
+  const controller = new AbortController();
+  const sourceSignal = init.signal;
+  const forwardAbort = () => controller.abort();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
-  if (!response.ok) {
-    if (response.status === 429) {
-      throw new Error('The book search is busy. Wait a few seconds and try again.');
-    }
-    throw new Error('Online search is unavailable right now.');
+  if (sourceSignal?.aborted) {
+    controller.abort();
+  } else {
+    sourceSignal?.addEventListener('abort', forwardAbort, { once: true });
   }
 
-  const payload = (await response.json()) as JikanSearchResponse;
+  try {
+    return await fetch(url, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timeout);
+    sourceSignal?.removeEventListener('abort', forwardAbort);
+  }
+}
+
+function jikanResults(payload: JikanSearchResponse): CatalogResult[] {
   return (payload.data ?? []).map((item) => ({
     sourceId: String(item.mal_id),
     title: item.title_english || item.title,
@@ -96,6 +135,129 @@ export async function searchCatalog(
     synopsis: item.synopsis || undefined,
     sourceUrl: item.url,
   }));
+}
+
+function kitsuStatus(status?: string | null): string {
+  switch (status) {
+    case 'current':
+      return 'Publishing';
+    case 'finished':
+      return 'Finished';
+    case 'upcoming':
+    case 'unreleased':
+      return 'Not yet published';
+    case 'tba':
+      return 'To be announced';
+    default:
+      return status ? status.charAt(0).toUpperCase() + status.slice(1) : 'Unknown';
+  }
+}
+
+function kitsuSourceType(subtype?: string | null): string {
+  if (subtype === 'novel') return 'Light Novel';
+  if (!subtype) return 'Manga';
+  return subtype.charAt(0).toUpperCase() + subtype.slice(1);
+}
+
+function kitsuResult(item: KitsuManga): CatalogResult | undefined {
+  const attributes = item.attributes;
+  if (!attributes) return undefined;
+
+  const titles = attributes.titles;
+  const title =
+    titles?.en_us ||
+    titles?.en ||
+    attributes.canonicalTitle ||
+    titles?.en_jp ||
+    titles?.ja_jp;
+  if (!title) return undefined;
+
+  const alternativeTitle = [titles?.en_jp, titles?.ja_jp, attributes.canonicalTitle].find(
+    (candidate) => candidate && candidate !== title,
+  );
+  const rating = Number(attributes.averageRating);
+
+  return {
+    sourceId: `kitsu:${item.id}`,
+    title,
+    alternativeTitle: alternativeTitle || undefined,
+    coverUrl:
+      attributes.posterImage?.large ||
+      attributes.posterImage?.original ||
+      attributes.posterImage?.medium ||
+      attributes.posterImage?.small ||
+      undefined,
+    kind: attributes.subtype === 'novel' ? 'light-novel' : 'manga',
+    sourceType: kitsuSourceType(attributes.subtype),
+    originalVolumes: attributes.volumeCount || undefined,
+    publishing: attributes.status === 'current',
+    statusLabel: kitsuStatus(attributes.status),
+    score: Number.isFinite(rating) ? rating / 10 : undefined,
+    synopsis: attributes.synopsis || undefined,
+    sourceUrl: `https://kitsu.app/manga/${item.id}`,
+  };
+}
+
+async function searchKitsu(
+  query: string,
+  filter: 'all' | MediaKind,
+  signal?: AbortSignal,
+): Promise<CatalogResult[]> {
+  const subtype =
+    filter === 'light-novel'
+      ? '&filter%5Bsubtype%5D=novel'
+      : filter === 'manga'
+        ? '&filter%5Bsubtype%5D=manga'
+        : '';
+  const url = `${KITSU_BASE}/manga?filter%5Btext%5D=${encodeURIComponent(query)}${subtype}&page%5Blimit%5D=14`;
+  const response = await fetchWithTimeout(
+    url,
+    { headers: { Accept: 'application/vnd.api+json' }, signal },
+    8_000,
+  );
+  if (!response.ok) throw new Error(`Kitsu search returned ${response.status}.`);
+
+  const payload = (await response.json()) as KitsuSearchResponse;
+  return (payload.data ?? [])
+    .map(kitsuResult)
+    .filter((item): item is CatalogResult => Boolean(item));
+}
+
+export async function searchCatalog(
+  query: string,
+  filter: 'all' | MediaKind = 'all',
+  signal?: AbortSignal,
+): Promise<CatalogResult[]> {
+  const cleanQuery = query.trim();
+  if (cleanQuery.length < 2) return [];
+
+  const url = `${JIKAN_BASE}/manga?q=${encodeURIComponent(cleanQuery)}&limit=14&order_by=popularity&sort=asc${requestType(filter)}`;
+  let primaryResults: CatalogResult[] | undefined;
+  let primaryWasBusy = false;
+
+  try {
+    const response = await fetchWithTimeout(url, { signal });
+    if (response.ok) {
+      primaryResults = jikanResults((await response.json()) as JikanSearchResponse);
+      if (primaryResults.length) return primaryResults;
+    } else {
+      primaryWasBusy = response.status === 429;
+    }
+  } catch (error) {
+    if (wasUserAbort(signal)) throw error;
+  }
+
+  try {
+    const fallbackResults = await searchKitsu(cleanQuery, filter, signal);
+    return fallbackResults.length ? fallbackResults : primaryResults ?? [];
+  } catch (error) {
+    if (wasUserAbort(signal)) throw error;
+    if (primaryResults) return primaryResults;
+    if (primaryWasBusy) {
+      throw new Error('The book catalogues are busy. Wait a few seconds and try again.');
+    }
+    throw new Error('Online search is unavailable right now. Check your connection and try again.');
+  }
 }
 
 export function normaliseSeriesTitle(value: string): string {
@@ -251,6 +413,17 @@ export async function refreshVolumeCounts(
       if (response.ok) {
         const payload = (await response.json()) as { data?: JikanManga };
         originalVolumes = payload.data?.volumes || originalVolumes;
+      }
+    } catch {
+      // The book-index lookup below can still provide a useful result.
+    }
+  } else if (title.sourceId?.startsWith('kitsu:')) {
+    try {
+      const id = title.sourceId.slice('kitsu:'.length);
+      const response = await fetchWithTimeout(`${KITSU_BASE}/manga/${encodeURIComponent(id)}`);
+      if (response.ok) {
+        const payload = (await response.json()) as { data?: KitsuManga };
+        originalVolumes = payload.data?.attributes?.volumeCount || originalVolumes;
       }
     } catch {
       // The book-index lookup below can still provide a useful result.

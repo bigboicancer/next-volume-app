@@ -13,7 +13,7 @@ module.exports = {
   navigateFallback: `${appRoot}index.html`,
   runtimeCaching: [
     {
-      urlPattern: /^https:\/\/cdn\.myanimelist\.net\//,
+      urlPattern: /^https:\/\/(cdn\.myanimelist\.net|media\.kitsu\.app)\//,
       handler: 'CacheFirst',
       options: {
         cacheName: 'next-volume-covers',
@@ -22,7 +22,7 @@ module.exports = {
       }
     },
     {
-      urlPattern: /^https:\/\/(api\.jikan\.moe|www\.googleapis\.com\/books|openlibrary\.org)\//,
+      urlPattern: /^https:\/\/(api\.jikan\.moe|kitsu\.io\/api\/edge|www\.googleapis\.com\/books|openlibrary\.org)\//,
       handler: 'NetworkFirst',
       options: {
         cacheName: 'next-volume-catalogue',
