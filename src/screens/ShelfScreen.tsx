@@ -71,12 +71,6 @@ function NextUpCard({
           <Text style={styles.nextOwnership}>
             {ownedVolumeCount(title)} owned
           </Text>
-          <View style={styles.nextProgress}>
-            <ProgressBar progress={progressOf(title)} color={colors.accent} height={8} />
-            <Text style={styles.nextProgressLabel}>
-              {Math.round(progressOf(title) * 100)}%
-            </Text>
-          </View>
         </View>
         {title.coverUrl ? (
           <Image source={{ uri: title.coverUrl }} style={styles.nextCover} resizeMode="cover" />
@@ -85,6 +79,14 @@ function NextUpCard({
             <Ionicons name="book" size={44} color={colors.textDim} />
           </View>
         )}
+      </View>
+      <View style={styles.nextProgress}>
+        <View style={styles.nextProgressTrack}>
+          <ProgressBar progress={progressOf(title)} color={colors.accent} height={8} />
+        </View>
+        <Text style={styles.nextProgressLabel}>
+          {Math.round(progressOf(title) * 100)}%
+        </Text>
       </View>
       <View style={styles.nextActions}>
         {next ? (
@@ -441,11 +443,15 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   nextProgress: {
-    maxWidth: 310,
     marginTop: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+    zIndex: 3,
+  },
+  nextProgressTrack: {
+    flex: 1,
+    minWidth: 0,
   },
   nextProgressLabel: {
     minWidth: 34,
