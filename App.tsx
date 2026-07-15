@@ -19,6 +19,7 @@ export default function App() {
     updateTitle,
     toggleVolume,
     removeTitle,
+    eraseAllData,
     getTitle,
   } = useLibrary();
   const [activeTab, setActiveTab] = useState<MainTab>('shelf');
@@ -71,7 +72,7 @@ export default function App() {
               onToggleVolume={toggleVolume}
             />
           ) : (
-            <StatsScreen titles={titles} />
+            <StatsScreen titles={titles} onEraseAllData={eraseAllData} />
           )}
           <BottomNav
             active={activeTab}

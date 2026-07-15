@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { loadLibrary, saveLibrary } from '../storage';
+import { clearAllSavedData, loadLibrary, saveLibrary } from '../storage';
 import { LibraryTitle, TitleDraft } from '../types';
 import { makeId, statusAfterProgress } from '../utils';
 
@@ -88,6 +88,11 @@ export function useLibrary() {
     setTitles((current) => current.filter((title) => title.id !== id));
   }, []);
 
+  const eraseAllData = useCallback(async () => {
+    await clearAllSavedData();
+    setTitles([]);
+  }, []);
+
   const byId = useMemo(
     () => new Map(titles.map((title) => [title.id, title])),
     [titles],
@@ -100,6 +105,7 @@ export function useLibrary() {
     updateTitle,
     toggleVolume,
     removeTitle,
+    eraseAllData,
     getTitle: (id: string) => byId.get(id),
   };
 }

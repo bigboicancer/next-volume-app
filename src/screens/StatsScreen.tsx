@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
 
 import { ProgressBar } from '../components/ProgressBar';
 import { colors, radii, spacing } from '../theme';
@@ -9,6 +10,7 @@ import { nextUnreadVolume, progressOf } from '../utils';
 
 interface StatsScreenProps {
   titles: LibraryTitle[];
+  onEraseAllData: () => Promise<void> | void;
 }
 
 function StatCard({
@@ -33,7 +35,10 @@ function StatCard({
   );
 }
 
-export function StatsScreen({ titles }: StatsScreenProps) {
+export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
+  const [eraseConfirmVisible, setEraseConfirmVisible] = useState(false);
+  const [erasing, setErasing] = useState(false);
+  const [eraseError, setEraseError] = useState('');
   const read = titles.reduce((sum, title) => sum + title.readVolumes.length, 0);
   const total = titles.reduce((sum, title) => sum + title.totalVolumes, 0);
   const remaining = Math.max(0, total - read);
@@ -53,13 +58,36 @@ export function StatsScreen({ titles }: StatsScreenProps) {
     .sort((a, b) => progressOf(b) - progressOf(a))
     .slice(0, 4);
 
+  function openEraseConfirmation() {
+    setEraseError('');
+    setEraseConfirmVisible(true);
+  }
+
+  function closeEraseConfirmation() {
+    if (!erasing) setEraseConfirmVisible(false);
+  }
+
+  async function eraseEverything() {
+    setErasing(true);
+    setEraseError('');
+    try {
+      await onEraseAllData();
+      setEraseConfirmVisible(false);
+    } catch {
+      setEraseError('Could not erase the saved data. Please try again.');
+    } finally {
+      setErasing(false);
+    }
+  }
+
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.page}>
+    <>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.page}>
         <Text style={styles.kicker}>THE NUMBERS</Text>
         <Text style={styles.heading}>Reading stats</Text>
         <Text style={styles.subtitle}>Useful context, without turning reading into homework.</Text>
@@ -165,8 +193,76 @@ export function StatsScreen({ titles }: StatsScreenProps) {
             </Text>
           </View>
         )}
-      </View>
-    </ScrollView>
+
+          <View style={styles.dataSection}>
+            <Text style={styles.sectionTitle}>Data & testing</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Erase all app data"
+              onPress={openEraseConfirmation}
+              style={({ pressed }) => [styles.eraseButton, pressed && styles.pressed]}
+            >
+              <View style={styles.eraseIcon}>
+                <Ionicons name="trash-outline" size={21} color={colors.danger} />
+              </View>
+              <View style={styles.eraseCopy}>
+                <Text style={styles.eraseTitle}>Erase all app data</Text>
+                <Text style={styles.eraseDescription}>
+                  Clear the shelf, reading progress and saved preferences.
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={colors.textDim} />
+            </Pressable>
+          </View>
+        </View>
+      </ScrollView>
+
+      <Modal
+        visible={eraseConfirmVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeEraseConfirmation}
+      >
+        <View style={styles.confirmBackdrop} accessibilityViewIsModal>
+          <Pressable style={StyleSheet.absoluteFill} onPress={closeEraseConfirmation} />
+          <View style={styles.confirmCard}>
+            <View style={styles.confirmIcon}>
+              <Ionicons name="warning-outline" size={24} color={colors.danger} />
+            </View>
+            <Text style={styles.confirmTitle}>Erase all app data?</Text>
+            <Text style={styles.confirmText}>
+              Every series, volume tick, reading date and saved preference on this device will be
+              permanently removed. This cannot be undone.
+            </Text>
+            {eraseError ? <Text style={styles.eraseError}>{eraseError}</Text> : null}
+            <View style={styles.confirmActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={erasing}
+                onPress={closeEraseConfirmation}
+                style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Permanently erase all app data"
+                disabled={erasing}
+                onPress={eraseEverything}
+                style={({ pressed }) => [styles.confirmEraseButton, pressed && styles.pressed]}
+              >
+                {erasing ? (
+                  <ActivityIndicator size="small" color={colors.text} />
+                ) : (
+                  <Ionicons name="trash-outline" size={17} color={colors.text} />
+                )}
+                <Text style={styles.confirmEraseText}>{erasing ? 'Erasing…' : 'Erase all'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -382,5 +478,122 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     textAlign: 'center',
+  },
+  dataSection: {
+    marginTop: spacing.xxl,
+  },
+  eraseButton: {
+    minHeight: 88,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.dangerSoft,
+    backgroundColor: colors.surface,
+  },
+  eraseIcon: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+    backgroundColor: colors.dangerSoft,
+  },
+  eraseCopy: {
+    flex: 1,
+  },
+  eraseTitle: {
+    color: colors.danger,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  eraseDescription: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  pressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.99 }],
+  },
+  confirmBackdrop: {
+    flex: 1,
+    padding: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.78)',
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 440,
+    padding: spacing.xl,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.dangerSoft,
+    backgroundColor: colors.surface,
+  },
+  confirmIcon: {
+    width: 48,
+    height: 48,
+    marginBottom: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+    backgroundColor: colors.dangerSoft,
+  },
+  confirmTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '900',
+  },
+  confirmText: {
+    marginTop: spacing.sm,
+    color: colors.textMuted,
+    fontSize: 12,
+    lineHeight: 19,
+  },
+  eraseError: {
+    marginTop: spacing.md,
+    color: colors.danger,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  confirmActions: {
+    marginTop: spacing.xl,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  cancelButton: {
+    minHeight: 48,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceRaised,
+  },
+  cancelText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  confirmEraseButton: {
+    minHeight: 48,
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.danger,
+  },
+  confirmEraseText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
   },
 });

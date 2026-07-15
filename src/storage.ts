@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { LibrarySnapshot, LibraryTitle } from './types';
 
 const STORAGE_KEY = '@next-volume/library/v1';
+export const INSTALL_PROMPT_DISMISSED_KEY = '@next-volume/install-prompt-dismissed/v1';
 
 function sanitiseTitle(value: LibraryTitle): LibraryTitle {
   const totalVolumes = Math.max(1, Math.floor(Number(value.totalVolumes) || 1));
@@ -38,4 +39,8 @@ export async function saveLibrary(titles: LibraryTitle[]): Promise<void> {
     titles,
   };
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+}
+
+export async function clearAllSavedData(): Promise<void> {
+  await AsyncStorage.multiRemove([STORAGE_KEY, INSTALL_PROMPT_DISMISSED_KEY]);
 }

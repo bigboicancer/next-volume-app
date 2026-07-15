@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { INSTALL_PROMPT_DISMISSED_KEY } from '../storage';
 import { colors, radii, spacing } from '../theme';
 
 interface InstallPromptEvent extends Event {
@@ -10,11 +11,9 @@ interface InstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
 }
 
-const DISMISSED_KEY = '@next-volume/install-prompt-dismissed/v1';
-
 async function rememberDismissal() {
   try {
-    await AsyncStorage.setItem(DISMISSED_KEY, 'true');
+    await AsyncStorage.setItem(INSTALL_PROMPT_DISMISSED_KEY, 'true');
   } catch {
     // The prompt can still be hidden for this visit if browser storage is unavailable.
   }
@@ -40,7 +39,7 @@ export function InstallPrompt() {
 
     let active = true;
 
-    void AsyncStorage.getItem(DISMISSED_KEY)
+    void AsyncStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY)
       .then((dismissed) => {
         if (active && dismissed === 'true') setHidden(true);
       })
