@@ -19,6 +19,7 @@ import { LibraryTitle } from '../types';
 import {
   formatShortDate,
   kindLabel,
+  nextUnreadOwnedVolume,
   nextUnreadVolume,
   progressOf,
   rangeThrough,
@@ -42,7 +43,8 @@ export function SeriesScreen({
 }: SeriesScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
   const progress = progressOf(title);
-  const next = nextUnreadVolume(title);
+  const next = nextUnreadOwnedVolume(title);
+  const nextInSeries = nextUnreadVolume(title);
   const readSet = new Set(title.readVolumes);
 
   async function refresh() {
@@ -71,7 +73,7 @@ export function SeriesScreen({
       if (preferred && preferred > title.totalVolumes) {
         Alert.alert(
           'New volumes found',
-          `${title.title} has been expanded from ${title.totalVolumes} to ${preferred} tracked volumes.`,
+          `${title.title} has been expanded from ${title.totalVolumes} to ${preferred} total volumes to read.`,
         );
       } else if (preferred) {
         Alert.alert('Already current', `The online count still shows ${preferred} volumes.`);
@@ -150,6 +152,9 @@ export function SeriesScreen({
                   {title.readVolumes.length} / {title.totalVolumes} volumes
                 </Text>
               </View>
+              <Text style={styles.heroOwnership}>
+                {title.ownedVolumes} owned · {title.totalVolumes} total to read
+              </Text>
               <ProgressBar progress={progress} color={colors.accent} height={9} />
             </View>
           </LinearGradient>
@@ -169,6 +174,16 @@ export function SeriesScreen({
               </View>
               <Ionicons name="chevron-forward" size={21} color={colors.background} />
             </Pressable>
+          ) : nextInSeries ? (
+            <View style={styles.ownedCaughtUpBanner}>
+              <Ionicons name="albums-outline" size={29} color={colors.accent} />
+              <View style={styles.caughtUpCopy}>
+                <Text style={styles.ownedCaughtUpTitle}>Owned volumes caught up</Text>
+                <Text style={styles.ownedCaughtUpText}>
+                  Volume {nextInSeries} is next, but it is not currently marked as owned.
+                </Text>
+              </View>
+            </View>
           ) : (
             <View style={styles.finishedBanner}>
               <Ionicons name="checkmark-done-circle" size={30} color={colors.green} />
@@ -182,7 +197,7 @@ export function SeriesScreen({
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>Volumes</Text>
-              <Text style={styles.sectionHint}>Tap any volume to change it.</Text>
+              <Text style={styles.sectionHint}>Solid volumes are owned. Dimmed volumes are not.</Text>
             </View>
             <View style={styles.legend}>
               <View style={styles.legendDot} />
@@ -193,15 +208,17 @@ export function SeriesScreen({
           <View style={styles.volumeGrid}>
             {rangeThrough(title.totalVolumes).map((volume) => {
               const read = readSet.has(volume);
+              const owned = volume <= title.ownedVolumes;
               return (
                 <Pressable
                   key={volume}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: read }}
-                  accessibilityLabel={`Volume ${volume}`}
+                  accessibilityLabel={`Volume ${volume}, ${owned ? 'owned' : 'not owned'}`}
                   onPress={() => onToggleVolume(volume)}
                   style={({ pressed }) => [
                     styles.volume,
+                    !owned && !read && styles.volumeUnowned,
                     read && styles.volumeRead,
                     pressed && styles.volumePressed,
                   ]}
@@ -209,7 +226,9 @@ export function SeriesScreen({
                   {read ? (
                     <Ionicons name="checkmark" size={17} color={colors.background} />
                   ) : (
-                    <Text style={styles.volumeText}>{volume}</Text>
+                    <Text style={[styles.volumeText, !owned && !read && styles.volumeTextUnowned]}>
+                      {volume}
+                    </Text>
                   )}
                 </Pressable>
               );
@@ -218,6 +237,18 @@ export function SeriesScreen({
 
           <Text style={styles.sectionTitle}>Volume information</Text>
           <View style={styles.infoCard}>
+            <View style={styles.infoRow}>
+              <View style={styles.infoIcon}>
+                <Ionicons name="albums-outline" size={19} color={colors.accent} />
+              </View>
+              <View style={styles.infoCopy}>
+                <Text style={styles.infoTitle}>Volumes owned</Text>
+                <Text style={styles.infoText}>
+                  {title.ownedVolumes} of {title.totalVolumes} total volumes
+                </Text>
+              </View>
+            </View>
+            <View style={styles.infoDivider} />
             <View style={styles.infoRow}>
               <View style={styles.infoIcon}>
                 <Ionicons name="language-outline" size={19} color={colors.blue} />
@@ -389,7 +420,7 @@ const styles = StyleSheet.create({
   },
   heroProgressRow: {
     marginTop: spacing.lg,
-    marginBottom: 7,
+    marginBottom: 2,
     flexDirection: 'row',
     alignItems: 'baseline',
     justifyContent: 'space-between',
@@ -403,6 +434,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 11,
     fontWeight: '700',
+  },
+  heroOwnership: {
+    marginBottom: 7,
+    color: colors.accent,
+    fontSize: 10,
+    fontWeight: '800',
   },
   nextButton: {
     minHeight: 76,
@@ -449,6 +486,33 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.greenSoft,
     backgroundColor: '#10251F',
+  },
+  ownedCaughtUpBanner: {
+    minHeight: 76,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: '#493E2D',
+    backgroundColor: '#2E281F',
+  },
+  caughtUpCopy: {
+    flex: 1,
+  },
+  ownedCaughtUpTitle: {
+    color: colors.accent,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  ownedCaughtUpText: {
+    marginTop: 2,
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
   },
   finishedTitle: {
     color: colors.green,
@@ -512,6 +576,11 @@ const styles = StyleSheet.create({
     borderColor: colors.green,
     backgroundColor: colors.green,
   },
+  volumeUnowned: {
+    opacity: 0.48,
+    borderStyle: 'dashed',
+    backgroundColor: colors.backgroundRaised,
+  },
   volumePressed: {
     opacity: 0.68,
     transform: [{ scale: 0.94 }],
@@ -520,6 +589,9 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 13,
     fontWeight: '800',
+  },
+  volumeTextUnowned: {
+    color: colors.textDim,
   },
   infoCard: {
     marginTop: spacing.md,

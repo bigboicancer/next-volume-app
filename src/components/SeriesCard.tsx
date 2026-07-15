@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle } from '../types';
-import { kindLabel, nextUnreadVolume, progressOf } from '../utils';
+import { kindLabel, nextUnreadOwnedVolume, nextUnreadVolume, progressOf } from '../utils';
 import { ProgressBar } from './ProgressBar';
 
 interface SeriesCardProps {
@@ -14,7 +14,9 @@ interface SeriesCardProps {
 }
 
 export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps) {
-  const next = nextUnreadVolume(title);
+  const next = nextUnreadOwnedVolume(title);
+  const nextInSeries = nextUnreadVolume(title);
+  const caughtUpWithOwned = !next && Boolean(nextInSeries);
   const progress = progressOf(title);
 
   return (
@@ -42,13 +44,19 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
           {title.title}
         </Text>
         <Text style={styles.meta}>
-          {title.readVolumes.length} of {title.totalVolumes} volumes
+          {title.readVolumes.length} read · {title.ownedVolumes} owned · {title.totalVolumes} total
         </Text>
         <ProgressBar progress={progress} />
 
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel={next ? `Mark volume ${next} read` : `${title.title} completed`}
+          accessibilityLabel={
+            next
+              ? `Mark volume ${next} read`
+              : caughtUpWithOwned
+                ? `${title.title} owned volumes caught up`
+                : `${title.title} completed`
+          }
           disabled={!next}
           onPress={(event) => {
             event.stopPropagation();
@@ -57,16 +65,23 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
           style={({ pressed }) => [
             styles.nextButton,
             !next && styles.completeButton,
+            caughtUpWithOwned && styles.caughtUpButton,
             pressed && styles.nextPressed,
           ]}
         >
           <Ionicons
-            name={next ? 'checkmark-circle-outline' : 'checkmark-circle'}
+            name={next ? 'checkmark-circle-outline' : caughtUpWithOwned ? 'albums-outline' : 'checkmark-circle'}
             size={17}
-            color={next ? colors.background : colors.green}
+            color={next ? colors.background : caughtUpWithOwned ? colors.accent : colors.green}
           />
-          <Text style={[styles.nextLabel, !next && styles.completeLabel]}>
-            {next ? `Finish vol. ${next}` : 'Complete'}
+          <Text
+            style={[
+              styles.nextLabel,
+              !next && styles.completeLabel,
+              caughtUpWithOwned && styles.caughtUpLabel,
+            ]}
+          >
+            {next ? `Finish vol. ${next}` : caughtUpWithOwned ? 'Owned caught up' : 'Complete'}
           </Text>
         </Pressable>
       </View>
@@ -129,8 +144,9 @@ const styles = StyleSheet.create({
   },
   meta: {
     color: colors.textMuted,
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: '600',
+    lineHeight: 15,
   },
   nextButton: {
     minHeight: 36,
@@ -148,6 +164,10 @@ const styles = StyleSheet.create({
     borderColor: colors.greenSoft,
     backgroundColor: colors.greenSoft,
   },
+  caughtUpButton: {
+    borderColor: '#493E2D',
+    backgroundColor: '#312A22',
+  },
   nextPressed: {
     opacity: 0.75,
   },
@@ -158,5 +178,8 @@ const styles = StyleSheet.create({
   },
   completeLabel: {
     color: colors.green,
+  },
+  caughtUpLabel: {
+    color: colors.accent,
   },
 });

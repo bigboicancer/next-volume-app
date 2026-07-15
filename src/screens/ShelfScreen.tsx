@@ -18,7 +18,7 @@ import { ProgressBar } from '../components/ProgressBar';
 import { SeriesCard } from '../components/SeriesCard';
 import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle, MediaKind } from '../types';
-import { lastActivity, nextUnreadVolume, progressOf } from '../utils';
+import { lastActivity, nextUnreadOwnedVolume, nextUnreadVolume, progressOf } from '../utils';
 
 interface ShelfScreenProps {
   titles: LibraryTitle[];
@@ -38,7 +38,7 @@ function NextUpCard({
   onOpen: () => void;
   onMark: () => void;
 }) {
-  const next = nextUnreadVolume(title);
+  const next = nextUnreadOwnedVolume(title);
 
   return (
     <LinearGradient
@@ -58,6 +58,9 @@ function NextUpCard({
         </Text>
         <Text style={styles.nextMeta}>
           {next ? `Volume ${next} is ready when you are` : 'Every listed volume is finished'}
+        </Text>
+        <Text style={styles.nextOwnership}>
+          {title.ownedVolumes} owned · {title.totalVolumes} total to read
         </Text>
         <View style={styles.nextProgress}>
           <ProgressBar progress={progressOf(title)} color={colors.accent} height={8} />
@@ -109,7 +112,7 @@ export function ShelfScreen({
   const nextUp = useMemo(
     () =>
       [...titles]
-        .filter((title) => title.status !== 'paused' && nextUnreadVolume(title))
+        .filter((title) => title.status !== 'paused' && nextUnreadOwnedVolume(title))
         .sort((a, b) => lastActivity(b) - lastActivity(a))[0],
     [titles],
   );
@@ -131,10 +134,9 @@ export function ShelfScreen({
   const columns = width >= 900 ? 4 : width >= 650 ? 3 : 2;
   const cardWidth = Math.max(145, (availableWidth - spacing.md * (columns - 1)) / columns);
   const readCount = titles.reduce((sum, title) => sum + title.readVolumes.length, 0);
-  const remaining = titles.reduce(
-    (sum, title) => sum + Math.max(0, title.totalVolumes - title.readVolumes.length),
-    0,
-  );
+  const ownedCount = titles.reduce((sum, title) => sum + title.ownedVolumes, 0);
+  const totalCount = titles.reduce((sum, title) => sum + title.totalVolumes, 0);
+  const everySeriesComplete = titles.every((title) => !nextUnreadVolume(title));
 
   return (
     <ScrollView
@@ -170,8 +172,14 @@ export function ShelfScreen({
           <LinearGradient colors={['#153B31', '#16242A']} style={styles.completeBanner}>
             <Ionicons name="checkmark-done-circle" size={34} color={colors.green} />
             <View style={styles.completeCopy}>
-              <Text style={styles.completeTitle}>Shelf clear</Text>
-              <Text style={styles.completeText}>Everything currently listed is read.</Text>
+              <Text style={styles.completeTitle}>
+                {everySeriesComplete ? 'All reading complete' : 'Owned shelf caught up'}
+              </Text>
+              <Text style={styles.completeText}>
+                {everySeriesComplete
+                  ? 'Every volume in every tracked series is read.'
+                  : 'You have read every volume currently marked as owned.'}
+              </Text>
             </View>
           </LinearGradient>
         ) : null}
@@ -183,13 +191,13 @@ export function ShelfScreen({
           </View>
           <View style={styles.statDivider} />
           <View style={styles.quickStat}>
-            <Text style={styles.quickValue}>{remaining}</Text>
-            <Text style={styles.quickLabel}>still waiting</Text>
+            <Text style={styles.quickValue}>{ownedCount}</Text>
+            <Text style={styles.quickLabel}>volumes owned</Text>
           </View>
           <View style={styles.statDivider} />
           <View style={styles.quickStat}>
-            <Text style={styles.quickValue}>{titles.length}</Text>
-            <Text style={styles.quickLabel}>series tracked</Text>
+            <Text style={styles.quickValue}>{totalCount}</Text>
+            <Text style={styles.quickLabel}>total to read</Text>
           </View>
         </View>
 
@@ -237,7 +245,7 @@ export function ShelfScreen({
         {filtered.length ? (
           <View style={styles.grid}>
             {filtered.map((title) => {
-              const next = nextUnreadVolume(title);
+              const next = nextUnreadOwnedVolume(title);
               return (
                 <SeriesCard
                   key={title.id}
@@ -382,6 +390,12 @@ const styles = StyleSheet.create({
     marginTop: 5,
     color: colors.textMuted,
     fontSize: 13,
+  },
+  nextOwnership: {
+    marginTop: 4,
+    color: colors.accent,
+    fontSize: 11,
+    fontWeight: '800',
   },
   nextProgress: {
     maxWidth: 310,

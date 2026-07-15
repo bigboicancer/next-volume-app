@@ -109,6 +109,7 @@ export function AddTitleModal({
   const [checkingVolumes, setCheckingVolumes] = useState(false);
   const [edition, setEdition] = useState<Edition>('english');
   const [totalVolumes, setTotalVolumes] = useState(1);
+  const [ownedVolumes, setOwnedVolumes] = useState(0);
   const [readThrough, setReadThrough] = useState(0);
   const [manualTitle, setManualTitle] = useState('');
   const [manualKind, setManualKind] = useState<MediaKind>('manga');
@@ -127,6 +128,7 @@ export function AddTitleModal({
     setCheckingVolumes(false);
     setEdition('english');
     setTotalVolumes(1);
+    setOwnedVolumes(0);
     setReadThrough(0);
     setManualTitle('');
     setManualKind('manga');
@@ -164,13 +166,17 @@ export function AddTitleModal({
     setLookup(undefined);
     setEdition('english');
     setReadThrough(0);
+    setOwnedVolumes(0);
     setTotalVolumes(result.originalVolumes || 1);
     setMode('confirm');
     setCheckingVolumes(true);
     try {
       const counts = await lookupVolumeCounts(result);
       setLookup(counts);
-      setTotalVolumes(counts.englishEstimate || result.originalVolumes || 1);
+      const detectedTotal = counts.englishEstimate || result.originalVolumes || 1;
+      setTotalVolumes(detectedTotal);
+      setOwnedVolumes((current) => Math.min(current, detectedTotal));
+      setReadThrough((current) => Math.min(current, detectedTotal));
     } finally {
       setCheckingVolumes(false);
     }
@@ -184,6 +190,7 @@ export function AddTitleModal({
         : lookup?.originalVolumes || selected?.originalVolumes;
     if (suggested) {
       setTotalVolumes(suggested);
+      setOwnedVolumes((current) => Math.min(current, suggested));
       setReadThrough((current) => Math.min(current, suggested));
     }
   }
@@ -199,6 +206,7 @@ export function AddTitleModal({
       coverUrl: selected.coverUrl,
       kind: selected.kind,
       edition,
+      ownedVolumes,
       totalVolumes,
       onlineOriginalVolumes: lookup?.originalVolumes || selected.originalVolumes,
       onlineEnglishVolumes: lookup?.englishEstimate,
@@ -227,6 +235,7 @@ export function AddTitleModal({
       title: cleanTitle,
       kind: manualKind,
       edition,
+      ownedVolumes,
       totalVolumes,
       readVolumes,
       readDates: {},
@@ -376,6 +385,7 @@ export function AddTitleModal({
                   setMode('manual');
                   setEdition('english');
                   setTotalVolumes(1);
+                  setOwnedVolumes(0);
                   setReadThrough(0);
                 }}
                 style={({ pressed }) => [styles.manualLink, pressed && styles.pressed]}
@@ -457,14 +467,24 @@ export function AddTitleModal({
               </View>
 
               <Counter
-                label="Volumes available to you"
-                help="This becomes your checklist and can be changed later."
+                label="Total volumes to read"
+                help="The full count for this edition. Completion uses this number."
                 value={totalVolumes}
                 min={1}
                 onChange={(value) => {
                   setTotalVolumes(value);
+                  setOwnedVolumes((current) => Math.min(current, value));
                   setReadThrough((current) => Math.min(current, value));
                 }}
+              />
+              <View style={styles.formDivider} />
+              <Counter
+                label="Volumes you own"
+                help="How many are currently in your collection."
+                value={ownedVolumes}
+                min={0}
+                max={totalVolumes}
+                onChange={setOwnedVolumes}
               />
               <View style={styles.formDivider} />
               <Counter
@@ -565,13 +585,23 @@ export function AddTitleModal({
               </View>
 
               <Counter
-                label="Volumes available"
+                label="Total volumes to read"
+                help="Use the full series or edition count, not only the books you own."
                 value={totalVolumes}
                 min={1}
                 onChange={(value) => {
                   setTotalVolumes(value);
+                  setOwnedVolumes((current) => Math.min(current, value));
                   setReadThrough((current) => Math.min(current, value));
                 }}
+              />
+              <View style={styles.formDivider} />
+              <Counter
+                label="Volumes you own"
+                value={ownedVolumes}
+                min={0}
+                max={totalVolumes}
+                onChange={setOwnedVolumes}
               />
               <View style={styles.formDivider} />
               <Counter

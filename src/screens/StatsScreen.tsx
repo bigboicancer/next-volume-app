@@ -19,7 +19,12 @@ function StatCard({
   label,
   tone,
 }: {
-  icon: 'checkmark-done' | 'hourglass-outline' | 'library-outline' | 'flame-outline';
+  icon:
+    | 'checkmark-done'
+    | 'albums-outline'
+    | 'hourglass-outline'
+    | 'library-outline'
+    | 'flame-outline';
   value: number;
   label: string;
   tone: string;
@@ -40,6 +45,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
   const [erasing, setErasing] = useState(false);
   const [eraseError, setEraseError] = useState('');
   const read = titles.reduce((sum, title) => sum + title.readVolumes.length, 0);
+  const owned = titles.reduce((sum, title) => sum + title.ownedVolumes, 0);
   const total = titles.reduce((sum, title) => sum + title.totalVolumes, 0);
   const remaining = Math.max(0, total - read);
   const completed = titles.filter((title) => title.status === 'completed').length;
@@ -104,12 +110,15 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
           </View>
           <ProgressBar progress={overall} color={colors.accent} height={10} />
           <Text style={styles.heroCaption}>
-            {total ? `${read} of ${total} tracked volumes finished` : 'Add a title to begin tracking.'}
+            {total
+              ? `${read} read · ${owned} owned · ${total} total to read`
+              : 'Add a title to begin tracking.'}
           </Text>
         </LinearGradient>
 
         <View style={styles.statGrid}>
           <StatCard icon="checkmark-done" value={read} label="Volumes read" tone={colors.green} />
+          <StatCard icon="albums-outline" value={owned} label="Volumes owned" tone={colors.blue} />
           <StatCard
             icon="hourglass-outline"
             value={remaining}

@@ -4,6 +4,7 @@ import {
   normaliseSeriesTitle,
   searchCatalog,
 } from '../src/services/catalog';
+import { statusAfterProgress } from '../src/utils';
 
 function expectEqual(actual: unknown, expected: unknown, label: string) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -24,6 +25,11 @@ expectEqual(
   normaliseSeriesTitle('Frieren: Beyond Journey’s End, Vol. 14'),
   'frieren beyond journey s end',
   'title normalisation',
+);
+expectEqual(
+  statusAfterProgress(6, 23, 'completed'),
+  'reading',
+  'owned volumes do not complete a longer series',
 );
 
 async function expectProviderResilience() {

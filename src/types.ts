@@ -33,6 +33,7 @@ export interface LibraryTitle {
   coverUrl?: string;
   kind: MediaKind;
   edition: Edition;
+  ownedVolumes: number;
   totalVolumes: number;
   onlineOriginalVolumes?: number;
   onlineEnglishVolumes?: number;
@@ -46,7 +47,7 @@ export interface LibraryTitle {
 }
 
 export interface LibrarySnapshot {
-  version: 1;
+  version: 2;
   titles: LibraryTitle[];
 }
 

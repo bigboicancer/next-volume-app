@@ -25,6 +25,7 @@ export function EditTitleModal({
 }: EditTitleModalProps) {
   const [name, setName] = useState('');
   const [total, setTotal] = useState(1);
+  const [owned, setOwned] = useState(0);
   const [edition, setEdition] = useState<Edition>('english');
   const [status, setStatus] = useState<ReadingStatus>('reading');
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
@@ -37,6 +38,7 @@ export function EditTitleModal({
     if (!title) return;
     setName(title.title);
     setTotal(title.totalVolumes);
+    setOwned(title.ownedVolumes);
     setEdition(title.edition);
     setStatus(title.status);
     setDeleteConfirmVisible(false);
@@ -57,6 +59,7 @@ export function EditTitleModal({
     onSave({
       title: cleanName,
       totalVolumes: total,
+      ownedVolumes: Math.min(owned, total),
       edition,
       status,
       readVolumes,
@@ -148,28 +151,79 @@ export function EditTitleModal({
 
             <View style={styles.totalRow}>
               <View style={styles.totalCopy}>
-                <Text style={styles.label}>Volumes available</Text>
-                <Text style={styles.help}>Lowering this removes ticks above the new total.</Text>
+                <Text style={styles.label}>Total volumes to read</Text>
+                <Text style={styles.help}>The full count. Completion is based on this number.</Text>
               </View>
               <View style={styles.counter}>
                 <Pressable
-                  onPress={() => setTotal((current) => clamp(current - 1, 1, 300))}
+                  accessibilityRole="button"
+                  accessibilityLabel="Decrease total volumes to read"
+                  onPress={() =>
+                    setTotal((current) => {
+                      const next = clamp(current - 1, 1, 300);
+                      setOwned((ownedCount) => Math.min(ownedCount, next));
+                      return next;
+                    })
+                  }
                   style={styles.counterButton}
                 >
                   <Ionicons name="remove" size={18} color={colors.text} />
                 </Pressable>
                 <TextInput
                   value={String(total)}
+                  accessibilityLabel="Total volumes to read"
                   onChangeText={(text) => {
                     const parsed = Number(text.replace(/[^0-9]/g, ''));
-                    if (Number.isFinite(parsed)) setTotal(clamp(parsed, 1, 300));
+                    if (Number.isFinite(parsed)) {
+                      const next = clamp(parsed, 1, 300);
+                      setTotal(next);
+                      setOwned((ownedCount) => Math.min(ownedCount, next));
+                    }
                   }}
                   keyboardType="number-pad"
                   selectTextOnFocus
                   style={styles.counterValue}
                 />
                 <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Increase total volumes to read"
                   onPress={() => setTotal((current) => clamp(current + 1, 1, 300))}
+                  style={styles.counterButton}
+                >
+                  <Ionicons name="add" size={18} color={colors.text} />
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.totalRow}>
+              <View style={styles.totalCopy}>
+                <Text style={styles.label}>Volumes you own</Text>
+                <Text style={styles.help}>Your collection count does not decide completion.</Text>
+              </View>
+              <View style={styles.counter}>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Decrease volumes owned"
+                  onPress={() => setOwned((current) => clamp(current - 1, 0, total))}
+                  style={styles.counterButton}
+                >
+                  <Ionicons name="remove" size={18} color={colors.text} />
+                </Pressable>
+                <TextInput
+                  value={String(owned)}
+                  accessibilityLabel="Volumes you own"
+                  onChangeText={(text) => {
+                    const parsed = Number(text.replace(/[^0-9]/g, ''));
+                    if (Number.isFinite(parsed)) setOwned(clamp(parsed, 0, total));
+                  }}
+                  keyboardType="number-pad"
+                  selectTextOnFocus
+                  style={styles.counterValue}
+                />
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Increase volumes owned"
+                  onPress={() => setOwned((current) => clamp(current + 1, 0, total))}
                   style={styles.counterButton}
                 >
                   <Ionicons name="add" size={18} color={colors.text} />

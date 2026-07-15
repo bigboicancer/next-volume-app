@@ -46,12 +46,17 @@ export function useLibrary() {
       current.map((title) => {
         if (title.id !== id) return title;
         const nextTotal = Math.max(1, Math.floor(update.totalVolumes ?? title.totalVolumes));
+        const nextOwned = Math.min(
+          nextTotal,
+          Math.max(0, Math.floor(update.ownedVolumes ?? title.ownedVolumes)),
+        );
         const nextRead = (update.readVolumes ?? title.readVolumes)
           .filter((volume) => volume <= nextTotal)
           .sort((a, b) => a - b);
         return {
           ...title,
           ...update,
+          ownedVolumes: nextOwned,
           totalVolumes: nextTotal,
           readVolumes: nextRead,
           status: statusAfterProgress(nextRead.length, nextTotal, update.status ?? title.status),
