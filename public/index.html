@@ -46,8 +46,23 @@
     </style>
     <script>
       if ('serviceWorker' in navigator) {
+        var reloadingForUpdate = false;
+
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (reloadingForUpdate) return;
+          reloadingForUpdate = true;
+          window.location.reload();
+        });
+
         window.addEventListener('load', function () {
-          navigator.serviceWorker.register(new URL('sw.js', document.baseURI), { scope: './' });
+          navigator.serviceWorker
+            .register(new URL('sw.js', document.baseURI), {
+              scope: './',
+              updateViaCache: 'none',
+            })
+            .then(function (registration) {
+              registration.update();
+            });
         });
       }
     </script>
