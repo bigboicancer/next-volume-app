@@ -1,5 +1,5 @@
 import { StatusBar } from 'expo-status-bar';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { BottomNav, MainTab } from './src/components/BottomNav';
@@ -9,7 +9,9 @@ import { EditTitleModal } from './src/modals/EditTitleModal';
 import { SeriesScreen } from './src/screens/SeriesScreen';
 import { ShelfScreen } from './src/screens/ShelfScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
+import { loadShelfPreferences, saveShelfPreferences } from './src/storage';
 import { colors } from './src/theme';
+import { ShelfPreferences } from './src/types';
 
 export default function App() {
   const {
@@ -30,7 +32,28 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string>();
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
+  const [shelfPreferences, setShelfPreferences] = useState<ShelfPreferences>({
+    filter: 'all',
+    sort: 'recent',
+  });
+  const shelfPreferencesLoaded = useRef(false);
   const selected = selectedId ? getTitle(selectedId) : undefined;
+
+  useEffect(() => {
+    let active = true;
+    loadShelfPreferences().then((preferences) => {
+      if (active) setShelfPreferences(preferences);
+      shelfPreferencesLoaded.current = true;
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!shelfPreferencesLoaded.current) return;
+    void saveShelfPreferences(shelfPreferences);
+  }, [shelfPreferences]);
 
   useEffect(() => {
     if (selectedId && !selected) {
@@ -75,6 +98,14 @@ export default function App() {
               onAdd={() => setAddVisible(true)}
               onOpen={setSelectedId}
               onToggleVolume={toggleVolume}
+              filter={shelfPreferences.filter}
+              sort={shelfPreferences.sort}
+              onFilterChange={(filter) =>
+                setShelfPreferences((current) => ({ ...current, filter }))
+              }
+              onSortChange={(sort) =>
+                setShelfPreferences((current) => ({ ...current, sort }))
+              }
             />
           ) : (
             <StatsScreen

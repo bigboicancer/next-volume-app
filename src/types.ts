@@ -1,6 +1,13 @@
 export type MediaKind = 'manga' | 'light-novel';
 export type Edition = 'english' | 'original';
 export type ReadingStatus = 'reading' | 'planned' | 'paused' | 'completed';
+export type ShelfFilter = 'all' | MediaKind;
+export type ShelfSort = 'recent' | 'title' | 'progress';
+
+export interface ShelfPreferences {
+  filter: ShelfFilter;
+  sort: ShelfSort;
+}
 
 export interface CatalogResult {
   sourceId: string;

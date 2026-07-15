@@ -17,7 +17,7 @@ import { InstallPrompt } from '../components/InstallPrompt';
 import { ProgressBar } from '../components/ProgressBar';
 import { SeriesCard } from '../components/SeriesCard';
 import { colors, radii, shadows, spacing } from '../theme';
-import { LibraryTitle, MediaKind } from '../types';
+import { LibraryTitle, ShelfFilter, ShelfSort } from '../types';
 import {
   lastActivity,
   nextUnreadOwnedVolume,
@@ -31,10 +31,11 @@ interface ShelfScreenProps {
   onAdd: () => void;
   onOpen: (id: string) => void;
   onToggleVolume: (id: string, volume: number) => void;
+  filter: ShelfFilter;
+  sort: ShelfSort;
+  onFilterChange: (filter: ShelfFilter) => void;
+  onSortChange: (sort: ShelfSort) => void;
 }
-
-type ShelfFilter = 'all' | MediaKind;
-type ShelfSort = 'recent' | 'title' | 'progress';
 
 function NextUpCard({
   title,
@@ -55,53 +56,55 @@ function NextUpCard({
       style={styles.nextCard}
     >
       <View style={styles.nextGlow} />
-      <View style={styles.nextCopy}>
-        <View style={styles.eyebrowRow}>
-          <Ionicons name="sparkles" size={14} color={colors.accent} />
-          <Text style={styles.eyebrow}>NEXT ON YOUR SHELF</Text>
-        </View>
-        <Text style={styles.nextTitle} numberOfLines={2}>
-          {title.title}
-        </Text>
-        <Text style={styles.nextMeta}>
-          {next ? `Volume ${next} is ready when you are` : 'Every listed volume is finished'}
-        </Text>
-        <Text style={styles.nextOwnership}>
-          {ownedVolumeCount(title)} owned
-        </Text>
-        <View style={styles.nextProgress}>
-          <ProgressBar progress={progressOf(title)} color={colors.accent} height={8} />
-          <Text style={styles.nextProgressLabel}>
-            {Math.round(progressOf(title) * 100)}%
+      <View style={styles.nextTop}>
+        <View style={styles.nextCopy}>
+          <View style={styles.eyebrowRow}>
+            <Ionicons name="sparkles" size={14} color={colors.accent} />
+            <Text style={styles.eyebrow}>NEXT ON YOUR SHELF</Text>
+          </View>
+          <Text style={styles.nextTitle} numberOfLines={2}>
+            {title.title}
           </Text>
+          <Text style={styles.nextMeta}>
+            {next ? `Volume ${next} is ready when you are` : 'Every listed volume is finished'}
+          </Text>
+          <Text style={styles.nextOwnership}>
+            {ownedVolumeCount(title)} owned
+          </Text>
+          <View style={styles.nextProgress}>
+            <ProgressBar progress={progressOf(title)} color={colors.accent} height={8} />
+            <Text style={styles.nextProgressLabel}>
+              {Math.round(progressOf(title) * 100)}%
+            </Text>
+          </View>
         </View>
-        <View style={styles.nextActions}>
-          {next ? (
-            <Pressable
-              accessibilityRole="button"
-              onPress={onMark}
-              style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
-            >
-              <Ionicons name="checkmark" size={18} color={colors.background} />
-              <Text style={styles.primaryButtonText}>Finish vol. {next}</Text>
-            </Pressable>
-          ) : null}
+        {title.coverUrl ? (
+          <Image source={{ uri: title.coverUrl }} style={styles.nextCover} resizeMode="cover" />
+        ) : (
+          <View style={[styles.nextCover, styles.nextCoverFallback]}>
+            <Ionicons name="book" size={44} color={colors.textDim} />
+          </View>
+        )}
+      </View>
+      <View style={styles.nextActions}>
+        {next ? (
           <Pressable
             accessibilityRole="button"
-            onPress={onOpen}
-            style={({ pressed }) => [styles.ghostButton, pressed && styles.buttonPressed]}
+            onPress={onMark}
+            style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
           >
-            <Text style={styles.ghostButtonText}>Open</Text>
+            <Ionicons name="checkmark" size={18} color={colors.background} />
+            <Text style={styles.primaryButtonText}>Finish vol. {next}</Text>
           </Pressable>
-        </View>
+        ) : null}
+        <Pressable
+          accessibilityRole="button"
+          onPress={onOpen}
+          style={({ pressed }) => [styles.ghostButton, pressed && styles.buttonPressed]}
+        >
+          <Text style={styles.ghostButtonText}>Open</Text>
+        </Pressable>
       </View>
-      {title.coverUrl ? (
-        <Image source={{ uri: title.coverUrl }} style={styles.nextCover} resizeMode="cover" />
-      ) : (
-        <View style={[styles.nextCover, styles.nextCoverFallback]}>
-          <Ionicons name="book" size={44} color={colors.textDim} />
-        </View>
-      )}
     </LinearGradient>
   );
 }
@@ -111,10 +114,12 @@ export function ShelfScreen({
   onAdd,
   onOpen,
   onToggleVolume,
+  filter,
+  sort,
+  onFilterChange,
+  onSortChange,
 }: ShelfScreenProps) {
   const { width } = useWindowDimensions();
-  const [filter, setFilter] = useState<ShelfFilter>('all');
-  const [sort, setSort] = useState<ShelfSort>('recent');
   const [query, setQuery] = useState('');
 
   const nextUp = useMemo(
@@ -238,16 +243,16 @@ export function ShelfScreen({
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.filters}
         >
-          <FilterChip label="All" selected={filter === 'all'} onPress={() => setFilter('all')} />
+          <FilterChip label="All" selected={filter === 'all'} onPress={() => onFilterChange('all')} />
           <FilterChip
             label="Manga"
             selected={filter === 'manga'}
-            onPress={() => setFilter('manga')}
+            onPress={() => onFilterChange('manga')}
           />
           <FilterChip
             label="Light novels"
             selected={filter === 'light-novel'}
-            onPress={() => setFilter('light-novel')}
+            onPress={() => onFilterChange('light-novel')}
           />
         </ScrollView>
 
@@ -261,17 +266,17 @@ export function ShelfScreen({
             <FilterChip
               label="Recent"
               selected={sort === 'recent'}
-              onPress={() => setSort('recent')}
+              onPress={() => onSortChange('recent')}
             />
             <FilterChip
               label="A–Z"
               selected={sort === 'title'}
-              onPress={() => setSort('title')}
+              onPress={() => onSortChange('title')}
             />
             <FilterChip
               label="Progress"
               selected={sort === 'progress'}
-              onPress={() => setSort('progress')}
+              onPress={() => onSortChange('progress')}
             />
           </ScrollView>
         </View>
@@ -379,12 +384,16 @@ const styles = StyleSheet.create({
     minHeight: 220,
     marginBottom: spacing.lg,
     padding: spacing.xl,
-    flexDirection: 'row',
     overflow: 'hidden',
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: '#443D68',
     ...shadows.card,
+  },
+  nextTop: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    gap: spacing.md,
   },
   nextGlow: {
     position: 'absolute',
@@ -398,7 +407,7 @@ const styles = StyleSheet.create({
   nextCopy: {
     flex: 1,
     zIndex: 2,
-    paddingRight: spacing.md,
+    minWidth: 0,
   },
   eyebrowRow: {
     flexDirection: 'row',
@@ -447,7 +456,9 @@ const styles = StyleSheet.create({
   nextActions: {
     marginTop: spacing.lg,
     flexDirection: 'row',
+    alignSelf: 'flex-start',
     gap: spacing.sm,
+    zIndex: 3,
   },
   primaryButton: {
     minHeight: 40,
@@ -458,6 +469,7 @@ const styles = StyleSheet.create({
     gap: 6,
     borderRadius: radii.md,
     backgroundColor: colors.accent,
+    flexShrink: 1,
   },
   primaryButtonText: {
     color: colors.background,
@@ -473,6 +485,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.2)',
     backgroundColor: 'rgba(255,255,255,0.06)',
+    flexShrink: 0,
   },
   ghostButtonText: {
     color: colors.text,
