@@ -1,0 +1,25 @@
+{
+  "expo": {
+    "name": "Next Volume",
+    "slug": "next-volume",
+    "version": "1.0.0",
+    "icon": "./assets/icon.png",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0E14",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.nextvolume.tracker"
+    },
+    "android": {
+      "package": "com.nextvolume.tracker",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "single",
+      "favicon": "./assets/favicon.png"
+    }
+  }
+}
