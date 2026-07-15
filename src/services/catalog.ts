@@ -231,33 +231,37 @@ export async function searchCatalog(
   const cleanQuery = query.trim();
   if (cleanQuery.length < 2) return [];
 
+  let kitsuResults: CatalogResult[] | undefined;
+
+  // Trying the healthy provider first keeps a slow Jikan outage from delaying every search.
+  try {
+    kitsuResults = await searchKitsu(cleanQuery, filter, signal);
+    if (kitsuResults.length) return kitsuResults;
+  } catch (error) {
+    if (wasUserAbort(signal)) throw error;
+  }
+
   const url = `${JIKAN_BASE}/manga?q=${encodeURIComponent(cleanQuery)}&limit=14&order_by=popularity&sort=asc${requestType(filter)}`;
-  let primaryResults: CatalogResult[] | undefined;
-  let primaryWasBusy = false;
+  let jikanWasBusy = false;
 
   try {
-    const response = await fetchWithTimeout(url, { signal });
+    const response = await fetchWithTimeout(url, { signal }, 5_000);
     if (response.ok) {
-      primaryResults = jikanResults((await response.json()) as JikanSearchResponse);
-      if (primaryResults.length) return primaryResults;
-    } else {
-      primaryWasBusy = response.status === 429;
+      const results = jikanResults((await response.json()) as JikanSearchResponse);
+      return results.length ? results : kitsuResults ?? [];
     }
+    jikanWasBusy = response.status === 429;
   } catch (error) {
     if (wasUserAbort(signal)) throw error;
   }
 
-  try {
-    const fallbackResults = await searchKitsu(cleanQuery, filter, signal);
-    return fallbackResults.length ? fallbackResults : primaryResults ?? [];
-  } catch (error) {
-    if (wasUserAbort(signal)) throw error;
-    if (primaryResults) return primaryResults;
-    if (primaryWasBusy) {
-      throw new Error('The book catalogues are busy. Wait a few seconds and try again.');
-    }
-    throw new Error('Online search is unavailable right now. Check your connection and try again.');
+  if (kitsuResults) return kitsuResults;
+  if (jikanWasBusy) {
+    throw new Error('The book catalogues are busy. Wait a few seconds and try again. [Search S2]');
   }
+  throw new Error(
+    'Online search is unavailable right now. Check your connection and try again. [Search S2]',
+  );
 }
 
 export function normaliseSeriesTitle(value: string): string {

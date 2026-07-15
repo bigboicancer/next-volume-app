@@ -26,20 +26,13 @@ expectEqual(
   'title normalisation',
 );
 
-async function expectSearchFallback() {
+async function expectProviderResilience() {
   const originalFetch = globalThis.fetch;
   const requestedUrls: string[] = [];
 
   globalThis.fetch = async (input) => {
     const url = String(input);
     requestedUrls.push(url);
-    if (url.includes('api.jikan.moe')) {
-      return new Response(JSON.stringify({ message: 'Gateway timeout' }), {
-        status: 504,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     return new Response(
       JSON.stringify({
         data: [
@@ -63,16 +56,50 @@ async function expectSearchFallback() {
 
   try {
     const results = await searchCatalog('Spice and Wolf', 'light-novel');
-    expectEqual(requestedUrls.length, 2, 'fallback request count');
-    expectEqual(results[0]?.sourceId, 'kitsu:42', 'fallback source id');
-    expectEqual(results[0]?.kind, 'light-novel', 'fallback media kind');
-    expectEqual(results[0]?.originalVolumes, 24, 'fallback volume count');
+    expectEqual(requestedUrls.length, 1, 'healthy-provider request count');
+    expectEqual(results[0]?.sourceId, 'kitsu:42', 'primary source id');
+    expectEqual(results[0]?.kind, 'light-novel', 'primary media kind');
+    expectEqual(results[0]?.originalVolumes, 24, 'primary volume count');
+
+    requestedUrls.length = 0;
+    globalThis.fetch = async (input) => {
+      const url = String(input);
+      requestedUrls.push(url);
+      if (url.includes('kitsu.io')) {
+        return new Response(JSON.stringify({ errors: [{ detail: 'Unavailable' }] }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/vnd.api+json' },
+        });
+      }
+      return new Response(
+        JSON.stringify({
+          data: [
+            {
+              mal_id: 123,
+              title: 'Ookami to Koushinryou',
+              title_english: 'Spice and Wolf',
+              type: 'Light Novel',
+              volumes: 24,
+              publishing: false,
+              status: 'Finished',
+            },
+          ],
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      );
+    };
+
+    const fallbackResults = await searchCatalog('Spice and Wolf', 'light-novel');
+    expectEqual(requestedUrls.length, 2, 'backup-provider request count');
+    expectEqual(fallbackResults[0]?.sourceId, '123', 'backup source id');
+    expectEqual(fallbackResults[0]?.kind, 'light-novel', 'backup media kind');
+    expectEqual(fallbackResults[0]?.originalVolumes, 24, 'backup volume count');
   } finally {
     globalThis.fetch = originalFetch;
   }
 }
 
-expectSearchFallback()
+expectProviderResilience()
   .then(() => console.log('Catalog parser and provider-fallback smoke tests passed.'))
   .catch((error) => {
     console.error(error);

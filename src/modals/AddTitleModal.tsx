@@ -384,8 +384,9 @@ export function AddTitleModal({
               </Pressable>
 
               <Text style={styles.sourceNote}>
-                Series metadata comes from MyAnimeList via Jikan. English volume totals are estimated
-                from Google Books and Open Library, so you can always correct the number before adding.
+                Series metadata comes from Kitsu with MyAnimeList via Jikan as a backup. English
+                volume totals are estimated from Google Books and Open Library, so you can always
+                correct the number before adding.
               </Text>
             </View>
           </ScrollView>
