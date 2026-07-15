@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { SelectedBackup } from '../backup';
 import { ProgressBar } from '../components/ProgressBar';
@@ -27,6 +27,8 @@ interface StatsScreenProps {
   onExportBackup: () => Promise<'shared' | 'downloaded'>;
   onChooseImportBackup: () => Promise<SelectedBackup | undefined>;
   onRestoreBackup: (titles: LibraryTitle[]) => Promise<void> | void;
+  initialScrollPosition: number;
+  onScrollPositionChange: (position: number) => void;
 }
 
 function StatCard({
@@ -62,6 +64,8 @@ export function StatsScreen({
   onExportBackup,
   onChooseImportBackup,
   onRestoreBackup,
+  initialScrollPosition,
+  onScrollPositionChange,
 }: StatsScreenProps) {
   const [eraseConfirmVisible, setEraseConfirmVisible] = useState(false);
   const [erasing, setErasing] = useState(false);
@@ -71,6 +75,18 @@ export function StatsScreen({
   const [selectedBackup, setSelectedBackup] = useState<SelectedBackup>();
   const [backupMessage, setBackupMessage] = useState('');
   const [backupError, setBackupError] = useState('');
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollRestored = useRef(false);
+  const latestScrollPosition = useRef(initialScrollPosition);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: initialScrollPosition, animated: false });
+      latestScrollPosition.current = initialScrollPosition;
+      scrollRestored.current = true;
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [initialScrollPosition]);
   const read = titles.reduce((sum, title) => sum + ownedReadCount(title), 0);
   const owned = titles.reduce((sum, title) => sum + ownedVolumeCount(title), 0);
   const remaining = Math.max(0, owned - read);
@@ -158,9 +174,17 @@ export function StatsScreen({
   return (
     <>
       <ScrollView
+        ref={scrollRef}
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        scrollEventThrottle={80}
+        onScroll={(event) => {
+          if (!scrollRestored.current) return;
+          const position = event.nativeEvent.contentOffset.y;
+          latestScrollPosition.current = position;
+          onScrollPositionChange(position);
+        }}
       >
         <View style={styles.page}>
         <Text style={styles.kicker}>THE NUMBERS</Text>
@@ -284,7 +308,7 @@ export function StatsScreen({
                     key={preset.id}
                     accessibilityRole="radio"
                     accessibilityState={{ checked: selected }}
-                    onPress={() => selectThemePreset(preset.id)}
+                    onPress={() => selectThemePreset(preset.id, latestScrollPosition.current)}
                     style={({ pressed }) => [
                       styles.themeOption,
                       selected && styles.themeOptionSelected,

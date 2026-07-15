@@ -114,6 +114,23 @@ export const themePresets: ThemePreset[] = [
 ];
 
 export const THEME_STORAGE_KEY = '@next-volume/theme/v1';
+const THEME_RETURN_STORAGE_KEY = '@next-volume/theme-return/v1';
+
+interface ThemeReturnState {
+  tab: 'stats';
+  scrollY: number;
+}
+
+function readThemeReturnState(): ThemeReturnState | undefined {
+  if (typeof window === 'undefined') return undefined;
+  try {
+    const value = JSON.parse(window.sessionStorage.getItem(THEME_RETURN_STORAGE_KEY) || 'null') as ThemeReturnState | null;
+    if (value?.tab !== 'stats' || !Number.isFinite(value.scrollY)) return undefined;
+    return { tab: 'stats', scrollY: Math.max(0, value.scrollY) };
+  } catch {
+    return undefined;
+  }
+}
 
 function savedThemeId(): ThemePresetId {
   if (typeof window === 'undefined') return 'amber';
@@ -122,6 +139,7 @@ function savedThemeId(): ThemePresetId {
 }
 
 export const activeThemeId = savedThemeId();
+export const themeReturnState = readThemeReturnState();
 export const colors = themePresets.find((preset) => preset.id === activeThemeId)?.colors ?? amberColors;
 
 export function applyDocumentTheme(): void {
@@ -131,9 +149,17 @@ export function applyDocumentTheme(): void {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', colors.background);
 }
 
-export function selectThemePreset(id: ThemePresetId): void {
+export function clearThemeReturnState(): void {
+  if (typeof window !== 'undefined') window.sessionStorage.removeItem(THEME_RETURN_STORAGE_KEY);
+}
+
+export function selectThemePreset(id: ThemePresetId, scrollY = 0): void {
   if (typeof window === 'undefined' || id === activeThemeId) return;
   window.localStorage.setItem(THEME_STORAGE_KEY, id);
+  window.sessionStorage.setItem(
+    THEME_RETURN_STORAGE_KEY,
+    JSON.stringify({ tab: 'stats', scrollY: Math.max(0, scrollY) }),
+  );
   window.location.reload();
 }
 

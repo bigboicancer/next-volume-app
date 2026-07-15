@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Image,
   Pressable,
@@ -35,6 +35,8 @@ interface ShelfScreenProps {
   sort: ShelfSort;
   onFilterChange: (filter: ShelfFilter) => void;
   onSortChange: (sort: ShelfSort) => void;
+  initialScrollPosition: number;
+  onScrollPositionChange: (position: number) => void;
 }
 
 function NextUpCard({
@@ -120,9 +122,21 @@ export function ShelfScreen({
   sort,
   onFilterChange,
   onSortChange,
+  initialScrollPosition,
+  onScrollPositionChange,
 }: ShelfScreenProps) {
   const { width } = useWindowDimensions();
   const [query, setQuery] = useState('');
+  const scrollRef = useRef<ScrollView>(null);
+  const scrollRestored = useRef(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: initialScrollPosition, animated: false });
+      scrollRestored.current = true;
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [initialScrollPosition]);
 
   const nextUp = useMemo(
     () =>
@@ -161,10 +175,15 @@ export function ShelfScreen({
 
   return (
     <ScrollView
+      ref={scrollRef}
       style={styles.scroll}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
+      scrollEventThrottle={80}
+      onScroll={(event) => {
+        if (scrollRestored.current) onScrollPositionChange(event.nativeEvent.contentOffset.y);
+      }}
     >
       <View style={styles.page}>
         <View style={styles.header}>

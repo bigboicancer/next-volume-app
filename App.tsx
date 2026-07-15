@@ -10,7 +10,12 @@ import { SeriesScreen } from './src/screens/SeriesScreen';
 import { ShelfScreen } from './src/screens/ShelfScreen';
 import { StatsScreen } from './src/screens/StatsScreen';
 import { loadShelfPreferences, saveShelfPreferences } from './src/storage';
-import { applyDocumentTheme, colors } from './src/theme';
+import {
+  applyDocumentTheme,
+  clearThemeReturnState,
+  colors,
+  themeReturnState,
+} from './src/theme';
 import { ShelfPreferences } from './src/types';
 
 export default function App() {
@@ -28,7 +33,7 @@ export default function App() {
     restoreBackup,
     getTitle,
   } = useLibrary();
-  const [activeTab, setActiveTab] = useState<MainTab>('shelf');
+  const [activeTab, setActiveTab] = useState<MainTab>(themeReturnState?.tab ?? 'shelf');
   const [selectedId, setSelectedId] = useState<string>();
   const [addVisible, setAddVisible] = useState(false);
   const [editVisible, setEditVisible] = useState(false);
@@ -37,10 +42,13 @@ export default function App() {
     sort: 'recent',
   });
   const shelfPreferencesLoaded = useRef(false);
+  const shelfScrollPosition = useRef(0);
+  const statsScrollPosition = useRef(themeReturnState?.scrollY ?? 0);
   const selected = selectedId ? getTitle(selectedId) : undefined;
 
   useEffect(() => {
     applyDocumentTheme();
+    clearThemeReturnState();
   }, []);
 
   useEffect(() => {
@@ -110,6 +118,10 @@ export default function App() {
               onSortChange={(sort) =>
                 setShelfPreferences((current) => ({ ...current, sort }))
               }
+              initialScrollPosition={shelfScrollPosition.current}
+              onScrollPositionChange={(position) => {
+                shelfScrollPosition.current = position;
+              }}
             />
           ) : (
             <StatsScreen
@@ -118,6 +130,10 @@ export default function App() {
               onExportBackup={exportBackup}
               onChooseImportBackup={chooseImportBackup}
               onRestoreBackup={restoreBackup}
+              initialScrollPosition={statsScrollPosition.current}
+              onScrollPositionChange={(position) => {
+                statsScrollPosition.current = position;
+              }}
             />
           )}
           <BottomNav
