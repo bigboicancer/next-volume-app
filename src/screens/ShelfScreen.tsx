@@ -24,6 +24,7 @@ import {
   nextUnreadVolume,
   ownedVolumeCount,
   progressOf,
+  totalReadCount,
 } from '../utils';
 
 interface ShelfScreenProps {
@@ -169,7 +170,7 @@ export function ShelfScreen({
   const availableWidth = Math.min(width, 1040) - spacing.xl * 2;
   const columns = width >= 900 ? 4 : width >= 650 ? 3 : 2;
   const cardWidth = Math.max(145, (availableWidth - spacing.md * (columns - 1)) / columns);
-  const readCount = titles.reduce((sum, title) => sum + title.readVolumes.length, 0);
+  const readCount = titles.reduce((sum, title) => sum + totalReadCount(title), 0);
   const ownedCount = titles.reduce((sum, title) => sum + ownedVolumeCount(title), 0);
   const everySeriesComplete = titles.every((title) => !nextUnreadVolume(title));
 

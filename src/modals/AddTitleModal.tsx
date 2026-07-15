@@ -232,6 +232,7 @@ export function AddTitleModal({
       onlineEnglishVolumes: lookup?.englishEstimate,
       publishing: selected.publishing,
       readVolumes,
+      onlineReadVolumes: [],
       readDates: {},
       status:
         readVolumes.length >= totalVolumes ? 'completed' : readVolumes.length ? 'reading' : 'planned',
@@ -269,6 +270,7 @@ export function AddTitleModal({
       ownedVolumeNumbers,
       totalVolumes,
       readVolumes,
+      onlineReadVolumes: [],
       readDates: {},
       status:
         readVolumes.length >= totalVolumes ? 'completed' : readVolumes.length ? 'reading' : 'planned',

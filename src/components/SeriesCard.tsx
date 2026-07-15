@@ -3,7 +3,15 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle } from '../types';
-import { nextUnreadOwnedVolume, nextUnreadVolume, ownedVolumeCount, progressOf } from '../utils';
+import {
+  isCompletedOnline,
+  nextUnreadOwnedVolume,
+  nextUnreadVolume,
+  onlineReadVolumesOf,
+  ownedVolumeCount,
+  progressOf,
+  totalReadCount,
+} from '../utils';
 import { ProgressBar } from './ProgressBar';
 
 interface SeriesCardProps {
@@ -18,6 +26,8 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
   const nextInSeries = nextUnreadVolume(title);
   const caughtUpWithOwned = !next && Boolean(nextInSeries);
   const progress = progressOf(title);
+  const onlineCount = onlineReadVolumesOf(title).length;
+  const completedOnline = isCompletedOnline(title);
 
   return (
     <Pressable
@@ -44,7 +54,8 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
           {title.title}
         </Text>
         <Text style={styles.meta}>
-          {title.readVolumes.length} read · {ownedVolumeCount(title)} owned
+          {totalReadCount(title)} read
+          {onlineCount ? ` · ${onlineCount} online` : ''} · {ownedVolumeCount(title)} owned
         </Text>
         <ProgressBar progress={progress} />
 
@@ -65,23 +76,47 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
           style={({ pressed }) => [
             styles.nextButton,
             !next && styles.completeButton,
+            completedOnline && styles.onlineCompleteButton,
             caughtUpWithOwned && styles.caughtUpButton,
             pressed && styles.nextPressed,
           ]}
         >
           <Ionicons
-            name={next ? 'checkmark-circle-outline' : caughtUpWithOwned ? 'albums-outline' : 'checkmark-circle'}
+            name={
+              next
+                ? 'checkmark-circle-outline'
+                : caughtUpWithOwned
+                  ? 'albums-outline'
+                  : completedOnline
+                    ? 'globe-outline'
+                    : 'checkmark-circle'
+            }
             size={17}
-            color={next ? colors.background : caughtUpWithOwned ? colors.accent : colors.green}
+            color={
+              next
+                ? colors.background
+                : caughtUpWithOwned
+                  ? colors.accent
+                  : completedOnline
+                    ? colors.blue
+                    : colors.green
+            }
           />
           <Text
             style={[
               styles.nextLabel,
               !next && styles.completeLabel,
+              completedOnline && styles.onlineCompleteLabel,
               caughtUpWithOwned && styles.caughtUpLabel,
             ]}
           >
-            {next ? `Finish vol. ${next}` : caughtUpWithOwned ? 'Owned caught up' : 'Complete'}
+            {next
+              ? `Finish vol. ${next}`
+              : caughtUpWithOwned
+                ? 'Owned caught up'
+                : completedOnline
+                  ? 'Completed online'
+                  : 'Complete'}
           </Text>
         </Pressable>
       </View>
@@ -164,6 +199,10 @@ const styles = StyleSheet.create({
     borderColor: colors.greenSoft,
     backgroundColor: colors.greenSoft,
   },
+  onlineCompleteButton: {
+    borderColor: colors.blueSoft,
+    backgroundColor: colors.blueSoft,
+  },
   caughtUpButton: {
     borderColor: '#493E2D',
     backgroundColor: '#312A22',
@@ -178,6 +217,9 @@ const styles = StyleSheet.create({
   },
   completeLabel: {
     color: colors.green,
+  },
+  onlineCompleteLabel: {
+    color: colors.blue,
   },
   caughtUpLabel: {
     color: colors.accent,

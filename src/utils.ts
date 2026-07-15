@@ -88,6 +88,26 @@ export function ownedVolumeCount(title: LibraryTitle): number {
   return ownedVolumeNumbersOf(title).length;
 }
 
+export function onlineReadVolumesOf(title: LibraryTitle): number[] {
+  return [...new Set(title.onlineReadVolumes ?? [])]
+    .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= title.totalVolumes)
+    .sort((a, b) => a - b);
+}
+
+export function allReadVolumeNumbersOf(title: LibraryTitle): number[] {
+  return [...new Set([...title.readVolumes, ...onlineReadVolumesOf(title)])]
+    .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= title.totalVolumes)
+    .sort((a, b) => a - b);
+}
+
+export function totalReadCount(title: LibraryTitle): number {
+  return allReadVolumeNumbersOf(title).length;
+}
+
+export function isCompletedOnline(title: LibraryTitle): boolean {
+  return onlineReadVolumesOf(title).length > 0 && totalReadCount(title) >= title.totalVolumes;
+}
+
 export function unownedReadVolumes(readVolumes: number[], ownedVolumes: number[]): number[] {
   const owned = new Set(ownedVolumes);
   return [...new Set(readVolumes)].filter((volume) => !owned.has(volume)).sort((a, b) => a - b);
@@ -105,7 +125,7 @@ export function ensureReadVolumesOwned(
 
 export function progressOf(title: LibraryTitle): number {
   if (title.totalVolumes <= 0) return 0;
-  return clamp(title.readVolumes.length / title.totalVolumes, 0, 1);
+  return clamp(totalReadCount(title) / title.totalVolumes, 0, 1);
 }
 
 export function ownedReadCount(title: LibraryTitle): number {
@@ -120,7 +140,7 @@ export function ownedProgressOf(title: LibraryTitle): number {
 }
 
 export function nextUnreadVolume(title: LibraryTitle): number | undefined {
-  const read = new Set(title.readVolumes);
+  const read = new Set(allReadVolumeNumbersOf(title));
   return rangeThrough(title.totalVolumes).find((volume) => !read.has(volume));
 }
 

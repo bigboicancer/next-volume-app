@@ -19,14 +19,17 @@ import { colors, radii, spacing } from '../theme';
 import { LibraryTitle } from '../types';
 import {
   formatShortDate,
+  isCompletedOnline,
   kindLabel,
   nextUnreadOwnedVolume,
   nextUnreadVolume,
   ownedVolumeCount,
   ownedVolumeNumbersOf,
+  onlineReadVolumesOf,
   progressOf,
   rangeThrough,
   statusLabel,
+  totalReadCount,
 } from '../utils';
 
 interface SeriesScreenProps {
@@ -35,6 +38,7 @@ interface SeriesScreenProps {
   onEdit: () => void;
   onToggleVolume: (volume: number) => void;
   onToggleOwnedVolume: (volume: number) => void;
+  onToggleOnlineVolume: (volume: number) => void;
   onUpdate: (update: Partial<LibraryTitle>) => void;
 }
 
@@ -44,18 +48,23 @@ export function SeriesScreen({
   onEdit,
   onToggleVolume,
   onToggleOwnedVolume,
+  onToggleOnlineVolume,
   onUpdate,
 }: SeriesScreenProps) {
   const { width } = useWindowDimensions();
   const compactVolumeHeader = width < 560;
   const [refreshing, setRefreshing] = useState(false);
-  const [volumeMode, setVolumeMode] = useState<'read' | 'owned'>('read');
+  const [volumeMode, setVolumeMode] = useState<'read' | 'owned' | 'online'>('read');
   const progress = progressOf(title);
   const next = nextUnreadOwnedVolume(title);
   const nextInSeries = nextUnreadVolume(title);
   const readSet = new Set(title.readVolumes);
   const ownedSet = new Set(ownedVolumeNumbersOf(title));
+  const onlineSet = new Set(onlineReadVolumesOf(title));
   const ownedCount = ownedVolumeCount(title);
+  const onlineCount = onlineSet.size;
+  const readCount = totalReadCount(title);
+  const completedOnline = isCompletedOnline(title);
 
   async function refresh() {
     if (refreshing) return;
@@ -146,7 +155,7 @@ export function SeriesScreen({
                 </View>
                 <View style={[styles.badge, styles.statusBadge]}>
                   <Text style={[styles.badgeText, styles.statusBadgeText]}>
-                    {statusLabel(title.status).toUpperCase()}
+                    {completedOnline ? 'COMPLETED ONLINE' : statusLabel(title.status).toUpperCase()}
                   </Text>
                 </View>
               </View>
@@ -159,11 +168,12 @@ export function SeriesScreen({
               <View style={styles.heroProgressRow}>
                 <Text style={styles.heroProgress}>{Math.round(progress * 100)}%</Text>
                 <Text style={styles.heroProgressMeta}>
-                  {title.readVolumes.length} / {title.totalVolumes} volumes
+                  {readCount} / {title.totalVolumes} volumes
                 </Text>
               </View>
               <Text style={styles.heroOwnership}>
-                {ownedCount} owned · {title.totalVolumes} total to read
+                {ownedCount} owned{onlineCount ? ` · ${onlineCount} read online` : ''} ·{' '}
+                {title.totalVolumes} total to read
               </Text>
               <ProgressBar progress={progress} color={colors.accent} height={9} />
             </View>
@@ -199,7 +209,11 @@ export function SeriesScreen({
               <Ionicons name="checkmark-done-circle" size={30} color={colors.green} />
               <View>
                 <Text style={styles.finishedTitle}>All caught up</Text>
-                <Text style={styles.finishedText}>Every tracked volume is marked read.</Text>
+                <Text style={styles.finishedText}>
+                  {completedOnline
+                    ? `Every volume is read, including ${onlineCount} read online.`
+                    : 'Every tracked volume is marked read.'}
+                </Text>
               </View>
             </View>
           )}
@@ -219,7 +233,9 @@ export function SeriesScreen({
               <Text style={styles.sectionHint}>
                 {volumeMode === 'read'
                   ? 'Only owned volumes can be marked read.'
-                  : 'Tap any volume to add or remove it from your collection.'}
+                  : volumeMode === 'owned'
+                    ? 'Tap any volume to add or remove it from your collection.'
+                    : 'Only unowned volumes can be marked as read online.'}
               </Text>
             </View>
             <View
@@ -257,6 +273,25 @@ export function SeriesScreen({
                   Owned
                 </Text>
               </Pressable>
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: volumeMode === 'online' }}
+                onPress={() => setVolumeMode('online')}
+                style={[
+                  styles.volumeModeButton,
+                  compactVolumeHeader && styles.volumeModeButtonCompact,
+                  volumeMode === 'online' && styles.volumeModeSelected,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.volumeModeText,
+                    volumeMode === 'online' && styles.volumeModeTextSelected,
+                  ]}
+                >
+                  Online
+                </Text>
+              </Pressable>
             </View>
           </View>
 
@@ -264,13 +299,14 @@ export function SeriesScreen({
             {rangeThrough(title.totalVolumes).map((volume) => {
               const read = readSet.has(volume);
               const owned = ownedSet.has(volume);
-              const selected = volumeMode === 'read' ? read : owned;
+              const online = onlineSet.has(volume);
+              const selected = volumeMode === 'read' ? read : volumeMode === 'owned' ? owned : online;
               return (
                 <Pressable
                   key={volume}
                   accessibilityRole="checkbox"
                   accessibilityState={{ checked: selected }}
-                  accessibilityLabel={`Volume ${volume}, ${read ? 'read' : 'unread'}, ${owned ? 'owned' : 'not owned'}`}
+                  accessibilityLabel={`Volume ${volume}, ${read ? 'read' : 'not normally read'}, ${online ? 'read online' : 'not read online'}, ${owned ? 'owned' : 'not owned'}`}
                   onPress={() => {
                     if (volumeMode === 'read' && !owned) {
                       Alert.alert(
@@ -286,8 +322,27 @@ export function SeriesScreen({
                       );
                       return;
                     }
+                    if (volumeMode === 'online' && owned) {
+                      Alert.alert(
+                        'This volume is owned',
+                        `Use the Read tab to mark owned volume ${volume} as read.`,
+                      );
+                      return;
+                    }
+                    if (volumeMode === 'owned' && !owned && online) {
+                      Alert.alert(
+                        'Move this read to owned?',
+                        `Volume ${volume} is marked as read online. Adding it to your collection will convert it to an owned, normally read volume.`,
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { text: 'Move to owned', onPress: () => onToggleOwnedVolume(volume) },
+                        ],
+                      );
+                      return;
+                    }
                     if (volumeMode === 'read') onToggleVolume(volume);
-                    else onToggleOwnedVolume(volume);
+                    else if (volumeMode === 'owned') onToggleOwnedVolume(volume);
+                    else onToggleOnlineVolume(volume);
                   }}
                   style={({ pressed }) => [
                     styles.volume,
@@ -295,11 +350,18 @@ export function SeriesScreen({
                     volumeMode === 'read' && read && styles.volumeRead,
                     volumeMode === 'owned' && !owned && styles.volumeUnowned,
                     volumeMode === 'owned' && owned && styles.volumeOwned,
+                    volumeMode === 'online' && owned && styles.volumeUnavailableOnline,
+                    volumeMode === 'online' && !owned && !online && styles.volumeUnowned,
+                    volumeMode === 'online' && online && styles.volumeOnline,
                     pressed && styles.volumePressed,
                   ]}
                 >
                   {selected ? (
-                    <Ionicons name="checkmark" size={17} color={colors.background} />
+                    <Ionicons
+                      name={volumeMode === 'online' ? 'globe-outline' : 'checkmark'}
+                      size={17}
+                      color={colors.background}
+                    />
                   ) : (
                     <Text style={[styles.volumeText, !owned && styles.volumeTextUnowned]}>
                       {volume}
@@ -323,6 +385,22 @@ export function SeriesScreen({
                 </Text>
               </View>
             </View>
+            {onlineCount ? (
+              <>
+                <View style={styles.infoDivider} />
+                <View style={styles.infoRow}>
+                  <View style={[styles.infoIcon, styles.onlineInfoIcon]}>
+                    <Ionicons name="globe-outline" size={19} color={colors.blue} />
+                  </View>
+                  <View style={styles.infoCopy}>
+                    <Text style={styles.infoTitle}>Volumes read online</Text>
+                    <Text style={styles.infoText}>
+                      {onlineCount} unowned {onlineCount === 1 ? 'volume' : 'volumes'}
+                    </Text>
+                  </View>
+                </View>
+              </>
+            ) : null}
             <View style={styles.infoDivider} />
             <View style={styles.infoRow}>
               <View style={styles.infoIcon}>
@@ -695,6 +773,16 @@ const styles = StyleSheet.create({
     borderColor: colors.accent,
     backgroundColor: colors.accent,
   },
+  volumeOnline: {
+    borderColor: colors.blue,
+    backgroundColor: colors.blue,
+  },
+  volumeUnavailableOnline: {
+    opacity: 0.42,
+    borderStyle: 'dashed',
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundRaised,
+  },
   volumeUnowned: {
     opacity: 0.48,
     borderStyle: 'dashed',
@@ -733,6 +821,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.md,
     backgroundColor: colors.surfaceRaised,
+  },
+  onlineInfoIcon: {
+    backgroundColor: colors.blueSoft,
   },
   infoCopy: {
     flex: 1,

@@ -111,6 +111,7 @@ This runs the strict TypeScript check and volume-title parser tests.
 - If Jikan is unavailable, searches automatically continue through Kitsu's public catalogue.
 - English-volume discovery checks Google Books and Open Library for numbered editions.
 - Online catalogue summaries are saved as brief descriptions and can be edited later.
+- Unowned volumes can be tracked separately as **Read online**; they count toward series completion without affecting owned-only statistics.
 - Finished series normally have a reliable original total.
 - Ongoing series often report their original total as unknown.
 - English book indexes can lag behind publishers or contain omnibus editions.

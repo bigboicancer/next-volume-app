@@ -48,6 +48,7 @@ export interface LibraryTitle {
   onlineEnglishVolumes?: number;
   publishing?: boolean;
   readVolumes: number[];
+  onlineReadVolumes: number[];
   readDates: Record<string, number>;
   status: ReadingStatus;
   createdAt: number;

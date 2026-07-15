@@ -25,6 +25,7 @@ export default function App() {
     addTitle,
     updateTitle,
     toggleVolume,
+    toggleOnlineVolume,
     toggleOwnedVolume,
     removeTitle,
     eraseAllData,
@@ -100,6 +101,7 @@ export default function App() {
           onEdit={() => setEditVisible(true)}
           onToggleVolume={(volume) => toggleVolume(selected.id, volume)}
           onToggleOwnedVolume={(volume) => toggleOwnedVolume(selected.id, volume)}
+          onToggleOnlineVolume={(volume) => toggleOnlineVolume(selected.id, volume)}
           onUpdate={(update) => updateTitle(selected.id, update)}
         />
       ) : (

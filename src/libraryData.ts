@@ -40,11 +40,27 @@ export function sanitiseLibraryTitle(input: unknown): LibraryTitle {
   ]
     .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= totalVolumes)
     .sort((a, b) => a - b);
-  const readVolumes = [...new Set(Array.isArray(value.readVolumes) ? value.readVolumes : [])]
+  const savedReadVolumes = [...new Set(Array.isArray(value.readVolumes) ? value.readVolumes : [])]
     .map(Number)
     .filter((volume) => Number.isInteger(volume) && volume > 0 && volume <= totalVolumes)
     .sort((a, b) => a - b);
-  const ownedVolumeNumbers = ensureReadVolumesOwned(savedOwnedVolumeNumbers, readVolumes, totalVolumes);
+  const savedOnlineReadVolumes = [
+    ...new Set(Array.isArray(value.onlineReadVolumes) ? value.onlineReadVolumes : []),
+  ]
+    .map(Number)
+    .filter((volume) => Number.isInteger(volume) && volume > 0 && volume <= totalVolumes)
+    .sort((a, b) => a - b);
+  const initiallyOwned = ensureReadVolumesOwned(
+    savedOwnedVolumeNumbers,
+    savedReadVolumes,
+    totalVolumes,
+  );
+  const initiallyOwnedSet = new Set(initiallyOwned);
+  const movedOnlineReads = savedOnlineReadVolumes.filter((volume) => initiallyOwnedSet.has(volume));
+  const readVolumes = [...new Set([...savedReadVolumes, ...movedOnlineReads])].sort((a, b) => a - b);
+  const ownedVolumeNumbers = ensureReadVolumesOwned(initiallyOwned, readVolumes, totalVolumes);
+  const ownedSet = new Set(ownedVolumeNumbers);
+  const onlineReadVolumes = savedOnlineReadVolumes.filter((volume) => !ownedSet.has(volume));
   const readDates = Object.fromEntries(
     Object.entries(value.readDates && typeof value.readDates === 'object' ? value.readDates : {})
       .filter(([volume, timestamp]) => /^\d+$/.test(volume) && Number.isFinite(Number(timestamp)))
@@ -52,7 +68,7 @@ export function sanitiseLibraryTitle(input: unknown): LibraryTitle {
   );
   const previousStatus = statuses.has(value.status)
     ? value.status
-    : readVolumes.length
+    : readVolumes.length + onlineReadVolumes.length
       ? 'reading'
       : 'planned';
 
@@ -64,8 +80,13 @@ export function sanitiseLibraryTitle(input: unknown): LibraryTitle {
     ownedVolumeNumbers,
     totalVolumes,
     readVolumes,
+    onlineReadVolumes,
     readDates,
-    status: statusAfterProgress(readVolumes.length, totalVolumes, previousStatus),
+    status: statusAfterProgress(
+      new Set([...readVolumes, ...onlineReadVolumes]).size,
+      totalVolumes,
+      previousStatus,
+    ),
     createdAt: Number.isFinite(Number(value.createdAt)) ? Number(value.createdAt) : Date.now(),
     updatedAt: Number.isFinite(Number(value.updatedAt)) ? Number(value.updatedAt) : Date.now(),
   };

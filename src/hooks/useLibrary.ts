@@ -3,7 +3,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { chooseBackupFile, shareOrDownloadBackup } from '../backup';
 import { clearAllSavedData, loadLibrary, saveLibrary } from '../storage';
 import { LibraryTitle, TitleDraft } from '../types';
-import { ensureReadVolumesOwned, makeId, rangeThrough, statusAfterProgress } from '../utils';
+import {
+  ensureReadVolumesOwned,
+  makeId,
+  rangeThrough,
+  statusAfterProgress,
+} from '../utils';
 
 export function useLibrary() {
   const [titles, setTitles] = useState<LibraryTitle[]>([]);
@@ -39,6 +44,7 @@ export function useLibrary() {
     );
     const item: LibraryTitle = {
       ...draft,
+      onlineReadVolumes: draft.onlineReadVolumes ?? [],
       ownedVolumes: ownedVolumeNumbers.length,
       ownedVolumeNumbers,
       id: makeId(),
@@ -61,14 +67,24 @@ export function useLibrary() {
         const requestedOwnedNumbers = [...new Set(requestedOwned)]
           .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= nextTotal)
           .sort((a, b) => a - b);
-        const nextRead = (update.readVolumes ?? title.readVolumes)
+        const requestedRead = (update.readVolumes ?? title.readVolumes)
           .filter((volume) => volume <= nextTotal)
           .sort((a, b) => a - b);
+        const requestedOnline = (update.onlineReadVolumes ?? title.onlineReadVolumes ?? [])
+          .filter((volume) => volume >= 1 && volume <= nextTotal)
+          .sort((a, b) => a - b);
+        const requestedOwnedSet = new Set(requestedOwnedNumbers);
+        const movedOnlineReads = requestedOnline.filter((volume) => requestedOwnedSet.has(volume));
+        const nextRead = [...new Set([...requestedRead, ...movedOnlineReads])].sort((a, b) => a - b);
         const nextOwnedNumbers = ensureReadVolumesOwned(
           requestedOwnedNumbers,
           nextRead,
           nextTotal,
         );
+        const nextOwnedSet = new Set(nextOwnedNumbers);
+        const nextOnline = [...new Set(requestedOnline)]
+          .filter((volume) => !nextOwnedSet.has(volume) && !nextRead.includes(volume))
+          .sort((a, b) => a - b);
         return {
           ...title,
           ...update,
@@ -76,7 +92,12 @@ export function useLibrary() {
           ownedVolumeNumbers: nextOwnedNumbers,
           totalVolumes: nextTotal,
           readVolumes: nextRead,
-          status: statusAfterProgress(nextRead.length, nextTotal, update.status ?? title.status),
+          onlineReadVolumes: nextOnline,
+          status: statusAfterProgress(
+            new Set([...nextRead, ...nextOnline]).size,
+            nextTotal,
+            update.status ?? title.status,
+          ),
           updatedAt: Date.now(),
         };
       }),
@@ -100,7 +121,39 @@ export function useLibrary() {
           ...title,
           readVolumes,
           readDates,
-          status: statusAfterProgress(readVolumes.length, title.totalVolumes, title.status),
+          status: statusAfterProgress(
+            new Set([...readVolumes, ...(title.onlineReadVolumes ?? [])]).size,
+            title.totalVolumes,
+            title.status,
+          ),
+          updatedAt: Date.now(),
+        };
+      }),
+    );
+  }, []);
+
+  const toggleOnlineVolume = useCallback((id: string, volume: number) => {
+    setTitles((current) =>
+      current.map((title) => {
+        if (
+          title.id !== id ||
+          volume < 1 ||
+          volume > title.totalVolumes ||
+          title.ownedVolumeNumbers.includes(volume) ||
+          title.readVolumes.includes(volume)
+        ) return title;
+        const exists = (title.onlineReadVolumes ?? []).includes(volume);
+        const onlineReadVolumes = exists
+          ? title.onlineReadVolumes.filter((item) => item !== volume)
+          : [...(title.onlineReadVolumes ?? []), volume].sort((a, b) => a - b);
+        return {
+          ...title,
+          onlineReadVolumes,
+          status: statusAfterProgress(
+            new Set([...title.readVolumes, ...onlineReadVolumes]).size,
+            title.totalVolumes,
+            title.status,
+          ),
           updatedAt: Date.now(),
         };
       }),
@@ -113,13 +166,27 @@ export function useLibrary() {
         if (title.id !== id || volume < 1 || volume > title.totalVolumes) return title;
         const exists = title.ownedVolumeNumbers.includes(volume);
         if (exists && title.readVolumes.includes(volume)) return title;
+        const wasReadOnline = (title.onlineReadVolumes ?? []).includes(volume);
         const ownedVolumeNumbers = exists
           ? title.ownedVolumeNumbers.filter((item) => item !== volume)
           : [...title.ownedVolumeNumbers, volume].sort((a, b) => a - b);
+        const readVolumes = wasReadOnline
+          ? [...new Set([...title.readVolumes, volume])].sort((a, b) => a - b)
+          : title.readVolumes;
+        const onlineReadVolumes = wasReadOnline
+          ? title.onlineReadVolumes.filter((item) => item !== volume)
+          : title.onlineReadVolumes;
         return {
           ...title,
           ownedVolumes: ownedVolumeNumbers.length,
           ownedVolumeNumbers,
+          readVolumes,
+          onlineReadVolumes,
+          status: statusAfterProgress(
+            new Set([...readVolumes, ...onlineReadVolumes]).size,
+            title.totalVolumes,
+            title.status,
+          ),
           updatedAt: Date.now(),
         };
       }),
@@ -155,6 +222,7 @@ export function useLibrary() {
     addTitle,
     updateTitle,
     toggleVolume,
+    toggleOnlineVolume,
     toggleOwnedVolume,
     removeTitle,
     eraseAllData,

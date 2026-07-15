@@ -15,6 +15,8 @@ import {
   parseVolumeSelection,
   statusAfterProgress,
   unownedReadVolumes,
+  isCompletedOnline,
+  totalReadCount,
 } from '../src/utils';
 
 function expectEqual(actual: unknown, expected: unknown, label: string) {
@@ -86,6 +88,7 @@ const backupFixture: LibraryTitle = {
   ownedVolumeNumbers: [1, 3],
   totalVolumes: 3,
   readVolumes: [1],
+  onlineReadVolumes: [2],
   readDates: { '1': 1_700_000_000_000 },
   status: 'reading',
   createdAt: 1_700_000_000_000,
@@ -97,6 +100,13 @@ const restoredBackup = parsePortableBackup(
 expectEqual(restoredBackup[0]?.title, 'Backup Test', 'backup title restore');
 expectEqual(restoredBackup[0]?.ownedVolumeNumbers, [1, 3], 'backup ownership restore');
 expectEqual(restoredBackup[0]?.readVolumes, [1], 'backup progress restore');
+expectEqual(restoredBackup[0]?.onlineReadVolumes, [2], 'backup online progress restore');
+expectEqual(totalReadCount(backupFixture), 2, 'online reads count toward total progress');
+expectEqual(
+  isCompletedOnline({ ...backupFixture, onlineReadVolumes: [2, 3] }),
+  true,
+  'online completion detection',
+);
 
 async function expectProviderResilience() {
   const originalFetch = globalThis.fetch;
