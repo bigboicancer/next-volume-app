@@ -4,7 +4,14 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 
 import { colors, radii, spacing } from '../theme';
 import { Edition, LibraryTitle, ReadingStatus } from '../types';
-import { clamp, rangeThrough, statusLabel } from '../utils';
+import {
+  clamp,
+  formatVolumeSelection,
+  ownedVolumeNumbersOf,
+  parseVolumeSelection,
+  rangeThrough,
+  statusLabel,
+} from '../utils';
 
 interface EditTitleModalProps {
   visible: boolean;
@@ -25,7 +32,7 @@ export function EditTitleModal({
 }: EditTitleModalProps) {
   const [name, setName] = useState('');
   const [total, setTotal] = useState(1);
-  const [owned, setOwned] = useState(0);
+  const [ownedInput, setOwnedInput] = useState('');
   const [edition, setEdition] = useState<Edition>('english');
   const [status, setStatus] = useState<ReadingStatus>('reading');
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
@@ -38,7 +45,7 @@ export function EditTitleModal({
     if (!title) return;
     setName(title.title);
     setTotal(title.totalVolumes);
-    setOwned(title.ownedVolumes);
+    setOwnedInput(formatVolumeSelection(ownedVolumeNumbersOf(title)));
     setEdition(title.edition);
     setStatus(title.status);
     setDeleteConfirmVisible(false);
@@ -56,10 +63,12 @@ export function EditTitleModal({
       status === 'completed'
         ? rangeThrough(total)
         : title!.readVolumes.filter((volume) => volume <= total);
+    const ownedVolumeNumbers = parseVolumeSelection(ownedInput, total);
     onSave({
       title: cleanName,
       totalVolumes: total,
-      ownedVolumes: Math.min(owned, total),
+      ownedVolumes: ownedVolumeNumbers.length,
+      ownedVolumeNumbers,
       edition,
       status,
       readVolumes,
@@ -159,11 +168,7 @@ export function EditTitleModal({
                   accessibilityRole="button"
                   accessibilityLabel="Decrease total volumes to read"
                   onPress={() =>
-                    setTotal((current) => {
-                      const next = clamp(current - 1, 1, 300);
-                      setOwned((ownedCount) => Math.min(ownedCount, next));
-                      return next;
-                    })
+                    setTotal((current) => clamp(current - 1, 1, 300))
                   }
                   style={styles.counterButton}
                 >
@@ -177,7 +182,6 @@ export function EditTitleModal({
                     if (Number.isFinite(parsed)) {
                       const next = clamp(parsed, 1, 300);
                       setTotal(next);
-                      setOwned((ownedCount) => Math.min(ownedCount, next));
                     }
                   }}
                   keyboardType="number-pad"
@@ -195,40 +199,22 @@ export function EditTitleModal({
               </View>
             </View>
 
-            <View style={styles.totalRow}>
-              <View style={styles.totalCopy}>
-                <Text style={styles.label}>Volumes you own</Text>
-                <Text style={styles.help}>Your collection count does not decide completion.</Text>
-              </View>
-              <View style={styles.counter}>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Decrease volumes owned"
-                  onPress={() => setOwned((current) => clamp(current - 1, 0, total))}
-                  style={styles.counterButton}
-                >
-                  <Ionicons name="remove" size={18} color={colors.text} />
-                </Pressable>
-                <TextInput
-                  value={String(owned)}
-                  accessibilityLabel="Volumes you own"
-                  onChangeText={(text) => {
-                    const parsed = Number(text.replace(/[^0-9]/g, ''));
-                    if (Number.isFinite(parsed)) setOwned(clamp(parsed, 0, total));
-                  }}
-                  keyboardType="number-pad"
-                  selectTextOnFocus
-                  style={styles.counterValue}
-                />
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel="Increase volumes owned"
-                  onPress={() => setOwned((current) => clamp(current + 1, 0, total))}
-                  style={styles.counterButton}
-                >
-                  <Ionicons name="add" size={18} color={colors.text} />
-                </Pressable>
-              </View>
+            <View style={styles.ownershipBlock}>
+              <Text style={styles.label}>Volumes you own</Text>
+              <Text style={styles.help}>
+                Enter numbers or ranges. Gaps are allowed, e.g. 1-3, 7, 12-14.
+              </Text>
+              <TextInput
+                value={ownedInput}
+                accessibilityLabel="Volumes you own"
+                onChangeText={setOwnedInput}
+                placeholder="1-3, 7, 12-14"
+                placeholderTextColor={colors.textDim}
+                selectionColor={colors.accent}
+                autoCapitalize="none"
+                autoCorrect={false}
+                style={styles.ownershipInput}
+              />
             </View>
 
             <Pressable
@@ -436,6 +422,20 @@ const styles = StyleSheet.create({
     color: colors.textDim,
     fontSize: 10,
     lineHeight: 14,
+  },
+  ownershipBlock: {
+    marginBottom: spacing.xl,
+  },
+  ownershipInput: {
+    height: 48,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    color: colors.text,
+    fontSize: 14,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   counter: {
     height: 42,

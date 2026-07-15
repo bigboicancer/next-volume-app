@@ -5,7 +5,13 @@ import {
   searchCatalog,
 } from '../src/services/catalog';
 import { LibraryTitle } from '../src/types';
-import { ownedProgressOf, ownedReadCount, statusAfterProgress } from '../src/utils';
+import {
+  formatVolumeSelection,
+  ownedProgressOf,
+  ownedReadCount,
+  parseVolumeSelection,
+  statusAfterProgress,
+} from '../src/utils';
 
 function expectEqual(actual: unknown, expected: unknown, label: string) {
   if (JSON.stringify(actual) !== JSON.stringify(expected)) {
@@ -33,12 +39,20 @@ expectEqual(
   'owned volumes do not complete a longer series',
 );
 const ownedShelfFixture = {
-  ownedVolumes: 6,
+  ownedVolumes: 3,
+  ownedVolumeNumbers: [1, 3, 7],
   totalVolumes: 23,
-  readVolumes: [1, 2, 3, 4, 5, 6, 7],
+  readVolumes: [1, 2, 3, 7],
 } as LibraryTitle;
-expectEqual(ownedReadCount(ownedShelfFixture), 6, 'unowned read volumes excluded from shelf stats');
+expectEqual(ownedReadCount(ownedShelfFixture), 3, 'unowned read volumes excluded from shelf stats');
 expectEqual(ownedProgressOf(ownedShelfFixture), 1, 'owned shelf progress');
+const randomVolumes = [1, 2, 3, 7, 12, 13, 14];
+expectEqual(
+  parseVolumeSelection('1-3, 7, 12-14', 23),
+  randomVolumes,
+  'random owned-volume ranges',
+);
+expectEqual(formatVolumeSelection(randomVolumes), '1-3, 7, 12-14', 'owned-volume formatting');
 
 async function expectProviderResilience() {
   const originalFetch = globalThis.fetch;

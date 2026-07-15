@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { clearAllSavedData, loadLibrary, saveLibrary } from '../storage';
 import { LibraryTitle, TitleDraft } from '../types';
-import { makeId, statusAfterProgress } from '../utils';
+import { makeId, rangeThrough, statusAfterProgress } from '../utils';
 
 export function useLibrary() {
   const [titles, setTitles] = useState<LibraryTitle[]>([]);
@@ -46,17 +46,21 @@ export function useLibrary() {
       current.map((title) => {
         if (title.id !== id) return title;
         const nextTotal = Math.max(1, Math.floor(update.totalVolumes ?? title.totalVolumes));
-        const nextOwned = Math.min(
-          nextTotal,
-          Math.max(0, Math.floor(update.ownedVolumes ?? title.ownedVolumes)),
-        );
+        const requestedOwned = update.ownedVolumeNumbers ??
+          (update.ownedVolumes !== undefined
+            ? rangeThrough(Math.max(0, Math.floor(update.ownedVolumes)))
+            : title.ownedVolumeNumbers);
+        const nextOwnedNumbers = [...new Set(requestedOwned)]
+          .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= nextTotal)
+          .sort((a, b) => a - b);
         const nextRead = (update.readVolumes ?? title.readVolumes)
           .filter((volume) => volume <= nextTotal)
           .sort((a, b) => a - b);
         return {
           ...title,
           ...update,
-          ownedVolumes: nextOwned,
+          ownedVolumes: nextOwnedNumbers.length,
+          ownedVolumeNumbers: nextOwnedNumbers,
           totalVolumes: nextTotal,
           readVolumes: nextRead,
           status: statusAfterProgress(nextRead.length, nextTotal, update.status ?? title.status),
@@ -89,6 +93,24 @@ export function useLibrary() {
     );
   }, []);
 
+  const toggleOwnedVolume = useCallback((id: string, volume: number) => {
+    setTitles((current) =>
+      current.map((title) => {
+        if (title.id !== id || volume < 1 || volume > title.totalVolumes) return title;
+        const exists = title.ownedVolumeNumbers.includes(volume);
+        const ownedVolumeNumbers = exists
+          ? title.ownedVolumeNumbers.filter((item) => item !== volume)
+          : [...title.ownedVolumeNumbers, volume].sort((a, b) => a - b);
+        return {
+          ...title,
+          ownedVolumes: ownedVolumeNumbers.length,
+          ownedVolumeNumbers,
+          updatedAt: Date.now(),
+        };
+      }),
+    );
+  }, []);
+
   const removeTitle = useCallback((id: string) => {
     setTitles((current) => current.filter((title) => title.id !== id));
   }, []);
@@ -109,6 +131,7 @@ export function useLibrary() {
     addTitle,
     updateTitle,
     toggleVolume,
+    toggleOwnedVolume,
     removeTitle,
     eraseAllData,
     getTitle: (id: string) => byId.get(id),

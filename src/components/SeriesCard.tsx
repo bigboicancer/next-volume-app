@@ -3,7 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle } from '../types';
-import { kindLabel, nextUnreadOwnedVolume, nextUnreadVolume, progressOf } from '../utils';
+import { nextUnreadOwnedVolume, nextUnreadVolume, ownedVolumeCount, progressOf } from '../utils';
 import { ProgressBar } from './ProgressBar';
 
 interface SeriesCardProps {
@@ -44,7 +44,7 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
           {title.title}
         </Text>
         <Text style={styles.meta}>
-          {title.readVolumes.length} read · {title.ownedVolumes} owned · {title.totalVolumes} total
+          {title.readVolumes.length} read · {ownedVolumeCount(title)} owned · {title.totalVolumes} total
         </Text>
         <ProgressBar progress={progress} />
 

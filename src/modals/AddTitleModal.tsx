@@ -26,7 +26,7 @@ import {
   TitleDraft,
   VolumeLookup,
 } from '../types';
-import { clamp, kindLabel, rangeThrough } from '../utils';
+import { clamp, kindLabel, parseVolumeSelection, rangeThrough } from '../utils';
 
 type AddMode = 'search' | 'confirm' | 'manual';
 type CatalogFilter = 'all' | MediaKind;
@@ -109,7 +109,7 @@ export function AddTitleModal({
   const [checkingVolumes, setCheckingVolumes] = useState(false);
   const [edition, setEdition] = useState<Edition>('english');
   const [totalVolumes, setTotalVolumes] = useState(1);
-  const [ownedVolumes, setOwnedVolumes] = useState(0);
+  const [ownedInput, setOwnedInput] = useState('');
   const [readThrough, setReadThrough] = useState(0);
   const [manualTitle, setManualTitle] = useState('');
   const [manualKind, setManualKind] = useState<MediaKind>('manga');
@@ -128,7 +128,7 @@ export function AddTitleModal({
     setCheckingVolumes(false);
     setEdition('english');
     setTotalVolumes(1);
-    setOwnedVolumes(0);
+    setOwnedInput('');
     setReadThrough(0);
     setManualTitle('');
     setManualKind('manga');
@@ -166,7 +166,7 @@ export function AddTitleModal({
     setLookup(undefined);
     setEdition('english');
     setReadThrough(0);
-    setOwnedVolumes(0);
+    setOwnedInput('');
     setTotalVolumes(result.originalVolumes || 1);
     setMode('confirm');
     setCheckingVolumes(true);
@@ -175,7 +175,6 @@ export function AddTitleModal({
       setLookup(counts);
       const detectedTotal = counts.englishEstimate || result.originalVolumes || 1;
       setTotalVolumes(detectedTotal);
-      setOwnedVolumes((current) => Math.min(current, detectedTotal));
       setReadThrough((current) => Math.min(current, detectedTotal));
     } finally {
       setCheckingVolumes(false);
@@ -190,7 +189,6 @@ export function AddTitleModal({
         : lookup?.originalVolumes || selected?.originalVolumes;
     if (suggested) {
       setTotalVolumes(suggested);
-      setOwnedVolumes((current) => Math.min(current, suggested));
       setReadThrough((current) => Math.min(current, suggested));
     }
   }
@@ -198,6 +196,7 @@ export function AddTitleModal({
   function finishOnlineAdd() {
     if (!selected) return;
     const readVolumes = rangeThrough(Math.min(readThrough, totalVolumes));
+    const ownedVolumeNumbers = parseVolumeSelection(ownedInput, totalVolumes);
     onAdd({
       sourceId: selected.sourceId,
       sourceUrl: selected.sourceUrl,
@@ -206,7 +205,8 @@ export function AddTitleModal({
       coverUrl: selected.coverUrl,
       kind: selected.kind,
       edition,
-      ownedVolumes,
+      ownedVolumes: ownedVolumeNumbers.length,
+      ownedVolumeNumbers,
       totalVolumes,
       onlineOriginalVolumes: lookup?.originalVolumes || selected.originalVolumes,
       onlineEnglishVolumes: lookup?.englishEstimate,
@@ -231,11 +231,13 @@ export function AddTitleModal({
       return;
     }
     const readVolumes = rangeThrough(Math.min(readThrough, totalVolumes));
+    const ownedVolumeNumbers = parseVolumeSelection(ownedInput, totalVolumes);
     onAdd({
       title: cleanTitle,
       kind: manualKind,
       edition,
-      ownedVolumes,
+      ownedVolumes: ownedVolumeNumbers.length,
+      ownedVolumeNumbers,
       totalVolumes,
       readVolumes,
       readDates: {},
@@ -385,7 +387,7 @@ export function AddTitleModal({
                   setMode('manual');
                   setEdition('english');
                   setTotalVolumes(1);
-                  setOwnedVolumes(0);
+                  setOwnedInput('');
                   setReadThrough(0);
                 }}
                 style={({ pressed }) => [styles.manualLink, pressed && styles.pressed]}
@@ -473,19 +475,25 @@ export function AddTitleModal({
                 min={1}
                 onChange={(value) => {
                   setTotalVolumes(value);
-                  setOwnedVolumes((current) => Math.min(current, value));
                   setReadThrough((current) => Math.min(current, value));
                 }}
               />
               <View style={styles.formDivider} />
-              <Counter
-                label="Volumes you own"
-                help="How many are currently in your collection."
-                value={ownedVolumes}
-                min={0}
-                max={totalVolumes}
-                onChange={setOwnedVolumes}
-              />
+              <View style={styles.ownershipField}>
+                <Text style={styles.fieldLabel}>Volumes you own</Text>
+                <Text style={styles.fieldHelp}>Enter individual numbers or ranges, e.g. 1-3, 7, 12-14.</Text>
+                <TextInput
+                  accessibilityLabel="Volumes you own"
+                  value={ownedInput}
+                  onChangeText={setOwnedInput}
+                  placeholder="1-3, 7, 12-14"
+                  placeholderTextColor={colors.textDim}
+                  selectionColor={colors.accent}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.ownershipInput}
+                />
+              </View>
               <View style={styles.formDivider} />
               <Counter
                 label="Already read through"
@@ -591,18 +599,25 @@ export function AddTitleModal({
                 min={1}
                 onChange={(value) => {
                   setTotalVolumes(value);
-                  setOwnedVolumes((current) => Math.min(current, value));
                   setReadThrough((current) => Math.min(current, value));
                 }}
               />
               <View style={styles.formDivider} />
-              <Counter
-                label="Volumes you own"
-                value={ownedVolumes}
-                min={0}
-                max={totalVolumes}
-                onChange={setOwnedVolumes}
-              />
+              <View style={styles.ownershipField}>
+                <Text style={styles.fieldLabel}>Volumes you own</Text>
+                <Text style={styles.fieldHelp}>Enter individual numbers or ranges, e.g. 1-3, 7, 12-14.</Text>
+                <TextInput
+                  accessibilityLabel="Volumes you own"
+                  value={ownedInput}
+                  onChangeText={setOwnedInput}
+                  placeholder="1-3, 7, 12-14"
+                  placeholderTextColor={colors.textDim}
+                  selectionColor={colors.accent}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.ownershipInput}
+                />
+              </View>
               <View style={styles.formDivider} />
               <Counter
                 label="Already read through"
@@ -962,6 +977,20 @@ const styles = StyleSheet.create({
     color: colors.textDim,
     fontSize: 10,
     lineHeight: 14,
+  },
+  ownershipField: {
+    paddingVertical: spacing.md,
+  },
+  ownershipInput: {
+    height: 46,
+    marginTop: spacing.sm,
+    paddingHorizontal: spacing.md,
+    color: colors.text,
+    fontSize: 14,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   counterControl: {
     height: 42,

@@ -10,8 +10,8 @@ Next Volume is a private, local-first manga and light-novel tracker for iPhone, 
 - Searches manga and light novels online.
 - Retrieves cover art, publication status and known original volume totals.
 - Estimates currently indexed English volumes using public book catalogues.
-- Separates the full series total from the number of volumes you own.
-- Lets you correct both counts before adding a series.
+- Separates the full series total from the exact volumes you own, including gaps.
+- Lets you enter owned volumes as individual numbers or ranges such as `1-3, 7, 12-14`.
 - Tracks every volume separately rather than storing only a single progress number.
 - Provides a one-tap **Finish next volume** action.
 - Queues the next unread volume you own while measuring completion against the full series total.
@@ -112,7 +112,7 @@ This runs the strict TypeScript check and volume-title parser tests.
 - Ongoing series often report their original total as unknown.
 - English book indexes can lag behind publishers or contain omnibus editions.
 
-For those reasons, Next Volume treats the total you choose as authoritative. Refreshing can add newly discovered volumes but never lowers your owned count or deletes progress.
+For those reasons, Next Volume treats the total you choose as authoritative. Refreshing can add newly discovered volumes but never removes ownership selections or reading progress.
 
 ## Privacy
 

@@ -6,7 +6,12 @@ import { useState } from 'react';
 import { ProgressBar } from '../components/ProgressBar';
 import { colors, radii, spacing } from '../theme';
 import { LibraryTitle } from '../types';
-import { nextUnreadOwnedVolume, ownedProgressOf, ownedReadCount } from '../utils';
+import {
+  nextUnreadOwnedVolume,
+  ownedProgressOf,
+  ownedReadCount,
+  ownedVolumeCount,
+} from '../utils';
 
 interface StatsScreenProps {
   titles: LibraryTitle[];
@@ -45,7 +50,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
   const [erasing, setErasing] = useState(false);
   const [eraseError, setEraseError] = useState('');
   const read = titles.reduce((sum, title) => sum + ownedReadCount(title), 0);
-  const owned = titles.reduce((sum, title) => sum + title.ownedVolumes, 0);
+  const owned = titles.reduce((sum, title) => sum + ownedVolumeCount(title), 0);
   const remaining = Math.max(0, owned - read);
   const completed = titles.filter((title) => title.status === 'completed').length;
   const thisWeek = titles.reduce(
@@ -173,7 +178,7 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
         {nearlyFinished.length ? (
           <View style={styles.nearlyCard}>
             {nearlyFinished.map((title, index) => {
-              const remainingForTitle = title.ownedVolumes - ownedReadCount(title);
+              const remainingForTitle = ownedVolumeCount(title) - ownedReadCount(title);
               return (
                 <View key={title.id}>
                   <View style={styles.nearlyRow}>

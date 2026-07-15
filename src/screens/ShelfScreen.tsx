@@ -18,7 +18,13 @@ import { ProgressBar } from '../components/ProgressBar';
 import { SeriesCard } from '../components/SeriesCard';
 import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle, MediaKind } from '../types';
-import { lastActivity, nextUnreadOwnedVolume, nextUnreadVolume, progressOf } from '../utils';
+import {
+  lastActivity,
+  nextUnreadOwnedVolume,
+  nextUnreadVolume,
+  ownedVolumeCount,
+  progressOf,
+} from '../utils';
 
 interface ShelfScreenProps {
   titles: LibraryTitle[];
@@ -60,7 +66,7 @@ function NextUpCard({
           {next ? `Volume ${next} is ready when you are` : 'Every listed volume is finished'}
         </Text>
         <Text style={styles.nextOwnership}>
-          {title.ownedVolumes} owned · {title.totalVolumes} total to read
+          {ownedVolumeCount(title)} owned · {title.totalVolumes} total to read
         </Text>
         <View style={styles.nextProgress}>
           <ProgressBar progress={progressOf(title)} color={colors.accent} height={8} />
@@ -134,7 +140,7 @@ export function ShelfScreen({
   const columns = width >= 900 ? 4 : width >= 650 ? 3 : 2;
   const cardWidth = Math.max(145, (availableWidth - spacing.md * (columns - 1)) / columns);
   const readCount = titles.reduce((sum, title) => sum + title.readVolumes.length, 0);
-  const ownedCount = titles.reduce((sum, title) => sum + title.ownedVolumes, 0);
+  const ownedCount = titles.reduce((sum, title) => sum + ownedVolumeCount(title), 0);
   const totalCount = titles.reduce((sum, title) => sum + title.totalVolumes, 0);
   const everySeriesComplete = titles.every((title) => !nextUnreadVolume(title));
 
@@ -164,7 +170,7 @@ export function ShelfScreen({
             title={nextUp}
             onOpen={() => onOpen(nextUp.id)}
             onMark={() => {
-              const next = nextUnreadVolume(nextUp);
+              const next = nextUnreadOwnedVolume(nextUp);
               if (next) onToggleVolume(nextUp.id, next);
             }}
           />

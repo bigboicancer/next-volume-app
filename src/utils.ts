@@ -12,18 +12,74 @@ export function rangeThrough(count: number): number[] {
   return Array.from({ length: Math.max(0, count) }, (_, index) => index + 1);
 }
 
+export function parseVolumeSelection(value: string, maximum: number): number[] {
+  const max = Math.max(0, Math.floor(maximum));
+  const selected = new Set<number>();
+  const tokens = value.replace(/\s*[-–]\s*/g, '-').split(/[,\s]+/).filter(Boolean);
+
+  tokens.forEach((token) => {
+    const rangeMatch = token.match(/^(\d+)-(\d+)$/);
+    if (rangeMatch) {
+      const first = Number(rangeMatch[1]);
+      const second = Number(rangeMatch[2]);
+      const start = Math.max(1, Math.min(first, second));
+      const end = Math.min(max, Math.max(first, second));
+      for (let volume = start; volume <= end; volume += 1) selected.add(volume);
+      return;
+    }
+
+    const volume = Number(token);
+    if (Number.isInteger(volume) && volume >= 1 && volume <= max) selected.add(volume);
+  });
+
+  return [...selected].sort((a, b) => a - b);
+}
+
+export function formatVolumeSelection(volumes: number[]): string {
+  const sorted = [...new Set(volumes)].sort((a, b) => a - b);
+  const ranges: string[] = [];
+
+  for (let index = 0; index < sorted.length; index += 1) {
+    const start = sorted[index];
+    if (start === undefined) continue;
+    let end = start;
+    while (sorted[index + 1] === end + 1) {
+      index += 1;
+      end = sorted[index] ?? end;
+    }
+    ranges.push(start === end ? String(start) : `${start}-${end}`);
+  }
+
+  return ranges.join(', ');
+}
+
+export function ownedVolumeNumbersOf(title: LibraryTitle): number[] {
+  if (Array.isArray(title.ownedVolumeNumbers)) {
+    return [...new Set(title.ownedVolumeNumbers)]
+      .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= title.totalVolumes)
+      .sort((a, b) => a - b);
+  }
+  return rangeThrough(title.ownedVolumes);
+}
+
+export function ownedVolumeCount(title: LibraryTitle): number {
+  return ownedVolumeNumbersOf(title).length;
+}
+
 export function progressOf(title: LibraryTitle): number {
   if (title.totalVolumes <= 0) return 0;
   return clamp(title.readVolumes.length / title.totalVolumes, 0, 1);
 }
 
 export function ownedReadCount(title: LibraryTitle): number {
-  return title.readVolumes.filter((volume) => volume <= title.ownedVolumes).length;
+  const read = new Set(title.readVolumes);
+  return ownedVolumeNumbersOf(title).filter((volume) => read.has(volume)).length;
 }
 
 export function ownedProgressOf(title: LibraryTitle): number {
-  if (title.ownedVolumes <= 0) return 0;
-  return clamp(ownedReadCount(title) / title.ownedVolumes, 0, 1);
+  const owned = ownedVolumeCount(title);
+  if (owned <= 0) return 0;
+  return clamp(ownedReadCount(title) / owned, 0, 1);
 }
 
 export function nextUnreadVolume(title: LibraryTitle): number | undefined {
@@ -33,7 +89,7 @@ export function nextUnreadVolume(title: LibraryTitle): number | undefined {
 
 export function nextUnreadOwnedVolume(title: LibraryTitle): number | undefined {
   const read = new Set(title.readVolumes);
-  return rangeThrough(title.ownedVolumes).find((volume) => !read.has(volume));
+  return ownedVolumeNumbersOf(title).find((volume) => !read.has(volume));
 }
 
 export function statusAfterProgress(

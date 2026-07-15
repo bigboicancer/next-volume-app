@@ -21,6 +21,8 @@ import {
   kindLabel,
   nextUnreadOwnedVolume,
   nextUnreadVolume,
+  ownedVolumeCount,
+  ownedVolumeNumbersOf,
   progressOf,
   rangeThrough,
   statusLabel,
@@ -31,6 +33,7 @@ interface SeriesScreenProps {
   onBack: () => void;
   onEdit: () => void;
   onToggleVolume: (volume: number) => void;
+  onToggleOwnedVolume: (volume: number) => void;
   onUpdate: (update: Partial<LibraryTitle>) => void;
 }
 
@@ -39,13 +42,17 @@ export function SeriesScreen({
   onBack,
   onEdit,
   onToggleVolume,
+  onToggleOwnedVolume,
   onUpdate,
 }: SeriesScreenProps) {
   const [refreshing, setRefreshing] = useState(false);
+  const [volumeMode, setVolumeMode] = useState<'read' | 'owned'>('read');
   const progress = progressOf(title);
   const next = nextUnreadOwnedVolume(title);
   const nextInSeries = nextUnreadVolume(title);
   const readSet = new Set(title.readVolumes);
+  const ownedSet = new Set(ownedVolumeNumbersOf(title));
+  const ownedCount = ownedVolumeCount(title);
 
   async function refresh() {
     if (refreshing) return;
@@ -153,7 +160,7 @@ export function SeriesScreen({
                 </Text>
               </View>
               <Text style={styles.heroOwnership}>
-                {title.ownedVolumes} owned · {title.totalVolumes} total to read
+                {ownedCount} owned · {title.totalVolumes} total to read
               </Text>
               <ProgressBar progress={progress} color={colors.accent} height={9} />
             </View>
@@ -197,36 +204,65 @@ export function SeriesScreen({
           <View style={styles.sectionHeader}>
             <View>
               <Text style={styles.sectionTitle}>Volumes</Text>
-              <Text style={styles.sectionHint}>Solid volumes are owned. Dimmed volumes are not.</Text>
+              <Text style={styles.sectionHint}>
+                {volumeMode === 'read'
+                  ? 'Tap a volume to mark it read or unread.'
+                  : 'Tap any volume to add or remove it from your collection.'}
+              </Text>
             </View>
-            <View style={styles.legend}>
-              <View style={styles.legendDot} />
-              <Text style={styles.legendText}>Read</Text>
+            <View style={styles.volumeModeControl} accessibilityRole="tablist">
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: volumeMode === 'read' }}
+                onPress={() => setVolumeMode('read')}
+                style={[styles.volumeModeButton, volumeMode === 'read' && styles.volumeModeSelected]}
+              >
+                <Text style={[styles.volumeModeText, volumeMode === 'read' && styles.volumeModeTextSelected]}>
+                  Read
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="tab"
+                accessibilityState={{ selected: volumeMode === 'owned' }}
+                onPress={() => setVolumeMode('owned')}
+                style={[styles.volumeModeButton, volumeMode === 'owned' && styles.volumeModeSelected]}
+              >
+                <Text style={[styles.volumeModeText, volumeMode === 'owned' && styles.volumeModeTextSelected]}>
+                  Owned
+                </Text>
+              </Pressable>
             </View>
           </View>
 
           <View style={styles.volumeGrid}>
             {rangeThrough(title.totalVolumes).map((volume) => {
               const read = readSet.has(volume);
-              const owned = volume <= title.ownedVolumes;
+              const owned = ownedSet.has(volume);
+              const selected = volumeMode === 'read' ? read : owned;
               return (
                 <Pressable
                   key={volume}
                   accessibilityRole="checkbox"
-                  accessibilityState={{ checked: read }}
-                  accessibilityLabel={`Volume ${volume}, ${owned ? 'owned' : 'not owned'}`}
-                  onPress={() => onToggleVolume(volume)}
+                  accessibilityState={{ checked: selected }}
+                  accessibilityLabel={`Volume ${volume}, ${read ? 'read' : 'unread'}, ${owned ? 'owned' : 'not owned'}`}
+                  onPress={() =>
+                    volumeMode === 'read'
+                      ? onToggleVolume(volume)
+                      : onToggleOwnedVolume(volume)
+                  }
                   style={({ pressed }) => [
                     styles.volume,
-                    !owned && !read && styles.volumeUnowned,
-                    read && styles.volumeRead,
+                    volumeMode === 'read' && !owned && !read && styles.volumeUnowned,
+                    volumeMode === 'read' && read && styles.volumeRead,
+                    volumeMode === 'owned' && !owned && styles.volumeUnowned,
+                    volumeMode === 'owned' && owned && styles.volumeOwned,
                     pressed && styles.volumePressed,
                   ]}
                 >
-                  {read ? (
+                  {selected ? (
                     <Ionicons name="checkmark" size={17} color={colors.background} />
                   ) : (
-                    <Text style={[styles.volumeText, !owned && !read && styles.volumeTextUnowned]}>
+                    <Text style={[styles.volumeText, !owned && styles.volumeTextUnowned]}>
                       {volume}
                     </Text>
                   )}
@@ -244,7 +280,7 @@ export function SeriesScreen({
               <View style={styles.infoCopy}>
                 <Text style={styles.infoTitle}>Volumes owned</Text>
                 <Text style={styles.infoText}>
-                  {title.ownedVolumes} of {title.totalVolumes} total volumes
+                  {ownedCount} of {title.totalVolumes} total volumes
                 </Text>
               </View>
             </View>
@@ -540,21 +576,30 @@ const styles = StyleSheet.create({
     color: colors.textDim,
     fontSize: 12,
   },
-  legend: {
+  volumeModeControl: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    padding: 3,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
   },
-  legendDot: {
-    width: 9,
-    height: 9,
-    borderRadius: radii.round,
-    backgroundColor: colors.green,
+  volumeModeButton: {
+    minHeight: 34,
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.sm,
   },
-  legendText: {
+  volumeModeSelected: {
+    backgroundColor: colors.surfaceRaised,
+  },
+  volumeModeText: {
     color: colors.textMuted,
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
+  },
+  volumeModeTextSelected: {
+    color: colors.accent,
   },
   volumeGrid: {
     marginBottom: spacing.xxxl,
@@ -575,6 +620,10 @@ const styles = StyleSheet.create({
   volumeRead: {
     borderColor: colors.green,
     backgroundColor: colors.green,
+  },
+  volumeOwned: {
+    borderColor: colors.accent,
+    backgroundColor: colors.accent,
   },
   volumeUnowned: {
     opacity: 0.48,

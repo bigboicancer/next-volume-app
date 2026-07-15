@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { LibrarySnapshot, LibraryTitle } from './types';
-import { clamp, statusAfterProgress } from './utils';
+import { clamp, rangeThrough, statusAfterProgress } from './utils';
 
 const STORAGE_KEY = '@next-volume/library/v1';
 export const INSTALL_PROMPT_DISMISSED_KEY = '@next-volume/install-prompt-dismissed/v1';
@@ -17,11 +17,20 @@ function sanitiseTitle(value: LibraryTitle): LibraryTitle {
     previousTotal,
     hasSavedOwnership ? 0 : Math.floor(onlineEditionTotal),
   );
-  const ownedVolumes = clamp(
+  const migratedOwnedCount = clamp(
     Math.floor(hasSavedOwnership ? Number(value.ownedVolumes) : previousTotal),
     0,
     totalVolumes,
   );
+  const ownedVolumeNumbers = [
+    ...new Set(
+      Array.isArray(value.ownedVolumeNumbers)
+        ? value.ownedVolumeNumbers.map(Number)
+        : rangeThrough(migratedOwnedCount),
+    ),
+  ]
+    .filter((volume) => Number.isInteger(volume) && volume >= 1 && volume <= totalVolumes)
+    .sort((a, b) => a - b);
   const readVolumes = [...new Set(value.readVolumes ?? [])]
     .map(Number)
     .filter((volume) => Number.isInteger(volume) && volume > 0 && volume <= totalVolumes)
@@ -29,7 +38,8 @@ function sanitiseTitle(value: LibraryTitle): LibraryTitle {
 
   return {
     ...value,
-    ownedVolumes,
+    ownedVolumes: ownedVolumeNumbers.length,
+    ownedVolumeNumbers,
     totalVolumes,
     readVolumes,
     readDates: value.readDates ?? {},
@@ -47,7 +57,7 @@ export async function loadLibrary(): Promise<LibraryTitle[]> {
 
   try {
     const snapshot = JSON.parse(raw) as LibrarySnapshot;
-    if (![1, 2].includes(Number(snapshot.version)) || !Array.isArray(snapshot.titles)) return [];
+    if (![1, 2, 3].includes(Number(snapshot.version)) || !Array.isArray(snapshot.titles)) return [];
     return snapshot.titles.map(sanitiseTitle);
   } catch {
     return [];
@@ -56,7 +66,7 @@ export async function loadLibrary(): Promise<LibraryTitle[]> {
 
 export async function saveLibrary(titles: LibraryTitle[]): Promise<void> {
   const snapshot: LibrarySnapshot = {
-    version: 2,
+    version: 3,
     titles,
   };
   await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
