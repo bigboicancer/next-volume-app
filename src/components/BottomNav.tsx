@@ -1,5 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { colors, radii, shadows, spacing } from '../theme';
 
@@ -37,38 +37,47 @@ function NavItem({
 
 export function BottomNav({ active, onChange, onAdd }: BottomNavProps) {
   return (
-    <View style={styles.shell}>
-      <NavItem
-        label="Shelf"
-        icon="library-outline"
-        selected={active === 'shelf'}
-        onPress={() => onChange('shelf')}
-      />
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Add a title"
-        onPress={onAdd}
-        style={({ pressed }) => [styles.addButton, pressed && styles.addPressed]}
-      >
-        <Ionicons name="add" size={30} color={colors.background} />
-      </Pressable>
-      <NavItem
-        label="Stats"
-        icon="stats-chart-outline"
-        selected={active === 'stats'}
-        onPress={() => onChange('stats')}
-      />
-    </View>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.shell}>
+        <NavItem
+          label="Shelf"
+          icon="library-outline"
+          selected={active === 'shelf'}
+          onPress={() => onChange('shelf')}
+        />
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Add a title"
+          onPress={onAdd}
+          style={({ pressed }) => [styles.addButton, pressed && styles.addPressed]}
+        >
+          <Ionicons name="add" size={30} color={colors.background} />
+        </Pressable>
+        <NavItem
+          label="Stats"
+          icon="stats-chart-outline"
+          selected={active === 'stats'}
+          onPress={() => onChange('stats')}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  shell: {
+  safeArea: {
     position: 'absolute',
-    left: spacing.lg,
-    right: spacing.lg,
-    bottom: spacing.lg,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingTop: 0,
+    paddingRight: 0,
+    paddingLeft: 0,
+  },
+  shell: {
     height: 70,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
     paddingHorizontal: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
