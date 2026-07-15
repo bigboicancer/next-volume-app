@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ActivityIndicator, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useState } from 'react';
 
+import { SelectedBackup } from '../backup';
 import { ProgressBar } from '../components/ProgressBar';
 import { colors, radii, spacing } from '../theme';
 import { LibraryTitle } from '../types';
@@ -16,6 +17,9 @@ import {
 interface StatsScreenProps {
   titles: LibraryTitle[];
   onEraseAllData: () => Promise<void> | void;
+  onExportBackup: () => Promise<'shared' | 'downloaded'>;
+  onChooseImportBackup: () => Promise<SelectedBackup | undefined>;
+  onRestoreBackup: (titles: LibraryTitle[]) => Promise<void> | void;
 }
 
 function StatCard({
@@ -45,10 +49,21 @@ function StatCard({
   );
 }
 
-export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
+export function StatsScreen({
+  titles,
+  onEraseAllData,
+  onExportBackup,
+  onChooseImportBackup,
+  onRestoreBackup,
+}: StatsScreenProps) {
   const [eraseConfirmVisible, setEraseConfirmVisible] = useState(false);
   const [erasing, setErasing] = useState(false);
   const [eraseError, setEraseError] = useState('');
+  const [exporting, setExporting] = useState(false);
+  const [restoring, setRestoring] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<SelectedBackup>();
+  const [backupMessage, setBackupMessage] = useState('');
+  const [backupError, setBackupError] = useState('');
   const read = titles.reduce((sum, title) => sum + ownedReadCount(title), 0);
   const owned = titles.reduce((sum, title) => sum + ownedVolumeCount(title), 0);
   const remaining = Math.max(0, owned - read);
@@ -87,6 +102,49 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
       setEraseError('Could not erase the saved data. Please try again.');
     } finally {
       setErasing(false);
+    }
+  }
+
+  async function exportBackup() {
+    setExporting(true);
+    setBackupError('');
+    setBackupMessage('');
+    try {
+      const result = await onExportBackup();
+      setBackupMessage(result === 'shared' ? 'Backup shared successfully.' : 'Backup downloaded successfully.');
+    } catch (error) {
+      if ((error as Error).name !== 'AbortError') {
+        setBackupError('Could not export the backup. Please try again.');
+      }
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function chooseImport() {
+    setBackupError('');
+    setBackupMessage('');
+    try {
+      const backup = await onChooseImportBackup();
+      if (backup) setSelectedBackup(backup);
+    } catch (error) {
+      setBackupError((error as Error).message || 'Could not read that backup file.');
+    }
+  }
+
+  async function restoreImportedBackup() {
+    if (!selectedBackup) return;
+    setRestoring(true);
+    setBackupError('');
+    try {
+      const restoredCount = selectedBackup.titles.length;
+      await onRestoreBackup(selectedBackup.titles);
+      setSelectedBackup(undefined);
+      setBackupMessage(`Restored ${restoredCount} ${restoredCount === 1 ? 'title' : 'titles'} from the backup.`);
+    } catch {
+      setBackupError('Could not restore the backup. Your current shelf was kept.');
+    } finally {
+      setRestoring(false);
     }
   }
 
@@ -210,7 +268,46 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
         )}
 
           <View style={styles.dataSection}>
-            <Text style={styles.sectionTitle}>Data & testing</Text>
+            <Text style={styles.sectionTitle}>Data & backup</Text>
+            <View style={styles.backupCard}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={exporting}
+                onPress={exportBackup}
+                style={({ pressed }) => [styles.backupButton, pressed && styles.pressed]}
+              >
+                <View style={[styles.backupIcon, styles.exportIcon]}>
+                  {exporting ? (
+                    <ActivityIndicator size="small" color={colors.accent} />
+                  ) : (
+                    <Ionicons name="share-outline" size={21} color={colors.accent} />
+                  )}
+                </View>
+                <View style={styles.backupCopy}>
+                  <Text style={styles.backupTitle}>Export backup</Text>
+                  <Text style={styles.backupDescription}>Save or share your complete shelf as one file.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textDim} />
+              </Pressable>
+              <View style={styles.backupDivider} />
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Import a Next Volume backup"
+                onPress={chooseImport}
+                style={({ pressed }) => [styles.backupButton, pressed && styles.pressed]}
+              >
+                <View style={[styles.backupIcon, styles.importIcon]}>
+                  <Ionicons name="download-outline" size={21} color={colors.blue} />
+                </View>
+                <View style={styles.backupCopy}>
+                  <Text style={styles.backupTitle}>Import backup</Text>
+                  <Text style={styles.backupDescription}>Restore a backup saved from another browser.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color={colors.textDim} />
+              </Pressable>
+            </View>
+            {backupMessage ? <Text style={styles.backupSuccess}>{backupMessage}</Text> : null}
+            {backupError ? <Text style={styles.backupError}>{backupError}</Text> : null}
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Erase all app data"
@@ -272,6 +369,54 @@ export function StatsScreen({ titles, onEraseAllData }: StatsScreenProps) {
                   <Ionicons name="trash-outline" size={17} color={colors.text} />
                 )}
                 <Text style={styles.confirmEraseText}>{erasing ? 'Erasing…' : 'Erase all'}</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={Boolean(selectedBackup)}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !restoring && setSelectedBackup(undefined)}
+      >
+        <View style={styles.confirmBackdrop} accessibilityViewIsModal>
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={() => !restoring && setSelectedBackup(undefined)}
+          />
+          <View style={[styles.confirmCard, styles.importConfirmCard]}>
+            <View style={[styles.confirmIcon, styles.importConfirmIcon]}>
+              <Ionicons name="cloud-upload-outline" size={24} color={colors.blue} />
+            </View>
+            <Text style={styles.confirmTitle}>Replace this shelf?</Text>
+            <Text style={styles.confirmText}>
+              {selectedBackup?.fileName} contains {selectedBackup?.titles.length ?? 0}{' '}
+              {selectedBackup?.titles.length === 1 ? 'title' : 'titles'}. Importing it will replace
+              the {titles.length} {titles.length === 1 ? 'title' : 'titles'} currently saved in this browser.
+            </Text>
+            <View style={styles.confirmActions}>
+              <Pressable
+                accessibilityRole="button"
+                disabled={restoring}
+                onPress={() => setSelectedBackup(undefined)}
+                style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+              >
+                <Text style={styles.cancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={restoring}
+                onPress={restoreImportedBackup}
+                style={({ pressed }) => [styles.restoreButton, pressed && styles.pressed]}
+              >
+                {restoring ? (
+                  <ActivityIndicator size="small" color={colors.background} />
+                ) : (
+                  <Ionicons name="download-outline" size={17} color={colors.background} />
+                )}
+                <Text style={styles.restoreText}>{restoring ? 'Restoring…' : 'Replace & restore'}</Text>
               </Pressable>
             </View>
           </View>
@@ -497,6 +642,65 @@ const styles = StyleSheet.create({
   dataSection: {
     marginTop: spacing.xxl,
   },
+  backupCard: {
+    marginBottom: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+  },
+  backupButton: {
+    minHeight: 82,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  backupIcon: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+  },
+  exportIcon: {
+    backgroundColor: '#3A2D1D',
+  },
+  importIcon: {
+    backgroundColor: colors.blueSoft,
+  },
+  backupCopy: {
+    flex: 1,
+  },
+  backupTitle: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  backupDescription: {
+    marginTop: 3,
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  backupDivider: {
+    height: 1,
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.border,
+  },
+  backupSuccess: {
+    marginBottom: spacing.md,
+    color: colors.green,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  backupError: {
+    marginBottom: spacing.md,
+    color: colors.danger,
+    fontSize: 11,
+    fontWeight: '700',
+  },
   eraseButton: {
     minHeight: 88,
     padding: spacing.lg,
@@ -559,6 +763,12 @@ const styles = StyleSheet.create({
     borderRadius: radii.md,
     backgroundColor: colors.dangerSoft,
   },
+  importConfirmCard: {
+    borderColor: colors.blueSoft,
+  },
+  importConfirmIcon: {
+    backgroundColor: colors.blueSoft,
+  },
   confirmTitle: {
     color: colors.text,
     fontSize: 20,
@@ -608,6 +818,21 @@ const styles = StyleSheet.create({
   },
   confirmEraseText: {
     color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
+  },
+  restoreButton: {
+    minHeight: 48,
+    flex: 1.35,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    borderRadius: radii.md,
+    backgroundColor: colors.accent,
+  },
+  restoreText: {
+    color: colors.background,
     fontSize: 13,
     fontWeight: '900',
   },

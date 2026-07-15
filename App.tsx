@@ -21,6 +21,9 @@ export default function App() {
     toggleOwnedVolume,
     removeTitle,
     eraseAllData,
+    exportBackup,
+    chooseImportBackup,
+    restoreBackup,
     getTitle,
   } = useLibrary();
   const [activeTab, setActiveTab] = useState<MainTab>('shelf');
@@ -74,7 +77,13 @@ export default function App() {
               onToggleVolume={toggleVolume}
             />
           ) : (
-            <StatsScreen titles={titles} onEraseAllData={eraseAllData} />
+            <StatsScreen
+              titles={titles}
+              onEraseAllData={eraseAllData}
+              onExportBackup={exportBackup}
+              onChooseImportBackup={chooseImportBackup}
+              onRestoreBackup={restoreBackup}
+            />
           )}
           <BottomNav
             active={activeTab}

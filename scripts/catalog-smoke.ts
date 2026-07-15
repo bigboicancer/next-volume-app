@@ -4,6 +4,7 @@ import {
   normaliseSeriesTitle,
   searchCatalog,
 } from '../src/services/catalog';
+import { createPortableBackup, parsePortableBackup } from '../src/backup';
 import { LibraryTitle } from '../src/types';
 import {
   briefDescription,
@@ -76,6 +77,26 @@ expectEqual(
   'A complete first sentence.',
   'description shortening',
 );
+const backupFixture: LibraryTitle = {
+  id: 'backup-test',
+  title: 'Backup Test',
+  kind: 'manga',
+  edition: 'english',
+  ownedVolumes: 2,
+  ownedVolumeNumbers: [1, 3],
+  totalVolumes: 3,
+  readVolumes: [1],
+  readDates: { '1': 1_700_000_000_000 },
+  status: 'reading',
+  createdAt: 1_700_000_000_000,
+  updatedAt: 1_700_000_000_000,
+};
+const restoredBackup = parsePortableBackup(
+  createPortableBackup([backupFixture], new Date('2026-01-01T00:00:00.000Z')),
+);
+expectEqual(restoredBackup[0]?.title, 'Backup Test', 'backup title restore');
+expectEqual(restoredBackup[0]?.ownedVolumeNumbers, [1, 3], 'backup ownership restore');
+expectEqual(restoredBackup[0]?.readVolumes, [1], 'backup progress restore');
 
 async function expectProviderResilience() {
   const originalFetch = globalThis.fetch;

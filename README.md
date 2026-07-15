@@ -121,6 +121,8 @@ For those reasons, Next Volume treats the total you choose as authoritative. Ref
 
 Reading progress is stored locally using AsyncStorage. The app only contacts public catalogues when you search for a title or request a volume refresh.
 
+Use **Stats → Data & backup** to export the complete local shelf as a JSON backup. Importing a backup in another browser restores titles, ownership, progress, dates and descriptions after confirmation.
+
 ## Project structure
 
 ```text

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { chooseBackupFile, shareOrDownloadBackup } from '../backup';
 import { clearAllSavedData, loadLibrary, saveLibrary } from '../storage';
 import { LibraryTitle, TitleDraft } from '../types';
 import { ensureReadVolumesOwned, makeId, rangeThrough, statusAfterProgress } from '../utils';
@@ -134,6 +135,15 @@ export function useLibrary() {
     setTitles([]);
   }, []);
 
+  const exportBackup = useCallback(() => shareOrDownloadBackup(titles), [titles]);
+
+  const chooseImportBackup = useCallback(() => chooseBackupFile(), []);
+
+  const restoreBackup = useCallback(async (imported: LibraryTitle[]) => {
+    await saveLibrary(imported);
+    setTitles(imported);
+  }, []);
+
   const byId = useMemo(
     () => new Map(titles.map((title) => [title.id, title])),
     [titles],
@@ -148,6 +158,9 @@ export function useLibrary() {
     toggleOwnedVolume,
     removeTitle,
     eraseAllData,
+    exportBackup,
+    chooseImportBackup,
+    restoreBackup,
     getTitle: (id: string) => byId.get(id),
   };
 }
