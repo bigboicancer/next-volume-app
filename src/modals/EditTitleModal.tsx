@@ -102,7 +102,12 @@ export function EditTitleModal({
             </Pressable>
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.label}>Title</Text>
             <TextInput
               value={name}
@@ -250,6 +255,12 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
     transform: [{ scale: 0.98 }],
+  },
+  scroll: {
+    flexShrink: 1,
+  },
+  scrollContent: {
+    paddingBottom: spacing.lg,
   },
   label: {
     marginBottom: spacing.sm,

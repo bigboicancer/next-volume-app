@@ -270,6 +270,7 @@ export function AddTitleModal({
 
         {mode === 'search' ? (
           <ScrollView
+            style={styles.scroll}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -391,7 +392,11 @@ export function AddTitleModal({
             </View>
           </ScrollView>
         ) : mode === 'confirm' && selected ? (
-          <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scroll}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+          >
             <View style={styles.page}>
               <View style={styles.selectedHero}>
                 {selected.coverUrl ? (
@@ -491,6 +496,7 @@ export function AddTitleModal({
           </ScrollView>
         ) : (
           <ScrollView
+            style={styles.scroll}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
@@ -625,6 +631,9 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.7,
     transform: [{ scale: 0.98 }],
+  },
+  scroll: {
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 48,

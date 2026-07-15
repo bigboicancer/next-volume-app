@@ -54,7 +54,11 @@ export function StatsScreen({ titles }: StatsScreenProps) {
     .slice(0, 4);
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.page}>
         <Text style={styles.kicker}>THE NUMBERS</Text>
         <Text style={styles.heading}>Reading stats</Text>
@@ -167,6 +171,9 @@ export function StatsScreen({ titles }: StatsScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+  },
   scrollContent: {
     paddingBottom: 116,
   },

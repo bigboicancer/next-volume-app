@@ -112,7 +112,11 @@ export function SeriesScreen({
         </Pressable>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.page}>
           <LinearGradient colors={['#302949', '#192435', '#111923']} style={styles.hero}>
             <View style={styles.heroGlow} />
@@ -297,6 +301,9 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.72,
     transform: [{ scale: 0.98 }],
+  },
+  scroll: {
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: 48,

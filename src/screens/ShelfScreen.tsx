@@ -138,6 +138,7 @@ export function ShelfScreen({
 
   return (
     <ScrollView
+      style={styles.scroll}
       keyboardShouldPersistTaps="handled"
       contentContainerStyle={styles.scrollContent}
       showsVerticalScrollIndicator={false}
@@ -285,6 +286,9 @@ export function ShelfScreen({
 }
 
 const styles = StyleSheet.create({
+  scroll: {
+    flex: 1,
+  },
   scrollContent: {
     paddingBottom: 116,
   },
