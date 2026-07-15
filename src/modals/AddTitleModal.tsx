@@ -28,6 +28,7 @@ import {
   VolumeLookup,
 } from '../types';
 import {
+  briefDescription,
   clamp,
   formatVolumeSelection,
   kindLabel,
@@ -120,6 +121,7 @@ export function AddTitleModal({
   const [ownedInput, setOwnedInput] = useState('');
   const [readThrough, setReadThrough] = useState(0);
   const [manualTitle, setManualTitle] = useState('');
+  const [manualDescription, setManualDescription] = useState('');
   const [manualKind, setManualKind] = useState<MediaKind>('manga');
   const abortRef = useRef<AbortController | undefined>(undefined);
 
@@ -139,6 +141,7 @@ export function AddTitleModal({
     setOwnedInput('');
     setReadThrough(0);
     setManualTitle('');
+    setManualDescription('');
     setManualKind('manga');
   }, [visible]);
 
@@ -218,6 +221,7 @@ export function AddTitleModal({
       sourceUrl: selected.sourceUrl,
       title: selected.title,
       alternativeTitle: selected.alternativeTitle,
+      description: briefDescription(selected.synopsis),
       coverUrl: selected.coverUrl,
       kind: selected.kind,
       edition,
@@ -258,6 +262,7 @@ export function AddTitleModal({
     }
     onAdd({
       title: cleanTitle,
+      description: briefDescription(manualDescription, 600),
       kind: manualKind,
       edition,
       ownedVolumes: ownedVolumeNumbers.length,
@@ -568,6 +573,20 @@ export function AddTitleModal({
                 placeholderTextColor={colors.textDim}
                 selectionColor={colors.accent}
                 style={styles.textField}
+              />
+
+              <Text style={styles.fieldLabel}>Brief description (optional)</Text>
+              <TextInput
+                accessibilityLabel="Brief description"
+                value={manualDescription}
+                onChangeText={setManualDescription}
+                placeholder="What is this series about?"
+                placeholderTextColor={colors.textDim}
+                selectionColor={colors.accent}
+                multiline
+                maxLength={600}
+                textAlignVertical="top"
+                style={styles.descriptionField}
               />
 
               <Text style={styles.fieldLabel}>Type</Text>
@@ -1090,6 +1109,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     color: colors.text,
     fontSize: 15,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  descriptionField: {
+    minHeight: 112,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    color: colors.text,
+    fontSize: 14,
+    lineHeight: 20,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,

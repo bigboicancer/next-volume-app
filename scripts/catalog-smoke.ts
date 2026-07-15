@@ -6,6 +6,7 @@ import {
 } from '../src/services/catalog';
 import { LibraryTitle } from '../src/types';
 import {
+  briefDescription,
   ensureReadVolumesOwned,
   formatVolumeSelection,
   ownedProgressOf,
@@ -64,6 +65,16 @@ expectEqual(
   ensureReadVolumesOwned([1, 5], [1, 2, 5], 10),
   [1, 2, 5],
   'older read volumes migrate to owned',
+);
+expectEqual(
+  briefDescription('  <p>A hero   begins.</p>\nA new journey follows.  '),
+  'A hero begins. A new journey follows.',
+  'description cleanup',
+);
+expectEqual(
+  briefDescription('A complete first sentence. A much longer second sentence carries on.', 35),
+  'A complete first sentence.',
+  'description shortening',
 );
 
 async function expectProviderResilience() {

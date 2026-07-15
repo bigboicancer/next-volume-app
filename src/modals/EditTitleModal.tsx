@@ -5,6 +5,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View 
 import { colors, radii, spacing } from '../theme';
 import { Edition, LibraryTitle, ReadingStatus } from '../types';
 import {
+  briefDescription,
   clamp,
   formatVolumeSelection,
   ownedVolumeNumbersOf,
@@ -32,6 +33,7 @@ export function EditTitleModal({
   onDelete,
 }: EditTitleModalProps) {
   const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
   const [total, setTotal] = useState(1);
   const [ownedInput, setOwnedInput] = useState('');
   const [edition, setEdition] = useState<Edition>('english');
@@ -45,6 +47,7 @@ export function EditTitleModal({
     }
     if (!title) return;
     setName(title.title);
+    setDescription(title.description || '');
     setTotal(title.totalVolumes);
     setOwnedInput(formatVolumeSelection(ownedVolumeNumbersOf(title)));
     setEdition(title.edition);
@@ -75,6 +78,7 @@ export function EditTitleModal({
     }
     onSave({
       title: cleanName,
+      description: briefDescription(description, 600),
       totalVolumes: total,
       ownedVolumes: ownedVolumeNumbers.length,
       ownedVolumeNumbers,
@@ -133,6 +137,21 @@ export function EditTitleModal({
               onChangeText={setName}
               selectionColor={colors.accent}
               style={styles.input}
+            />
+
+            <Text style={styles.label}>Brief description</Text>
+            <Text style={styles.help}>Optional. Edit or replace the catalogue summary.</Text>
+            <TextInput
+              accessibilityLabel="Brief description"
+              value={description}
+              onChangeText={setDescription}
+              placeholder="What is this series about?"
+              placeholderTextColor={colors.textDim}
+              selectionColor={colors.accent}
+              multiline
+              maxLength={600}
+              textAlignVertical="top"
+              style={styles.descriptionInput}
             />
 
             <Text style={styles.label}>Edition</Text>
@@ -359,6 +378,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     color: colors.text,
     fontSize: 14,
+    borderRadius: radii.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  descriptionInput: {
+    minHeight: 104,
+    marginTop: spacing.sm,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    color: colors.text,
+    fontSize: 13,
+    lineHeight: 19,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,

@@ -204,6 +204,15 @@ export function SeriesScreen({
             </View>
           )}
 
+          {title.description ? (
+            <View style={styles.aboutSection}>
+              <Text style={styles.sectionTitle}>About</Text>
+              <View style={styles.aboutCard}>
+                <Text style={styles.aboutText}>{title.description}</Text>
+              </View>
+            </View>
+          ) : null}
+
           <View style={[styles.sectionHeader, compactVolumeHeader && styles.sectionHeaderCompact]}>
             <View style={styles.sectionHeaderCopy}>
               <Text style={styles.sectionTitle}>Volumes</Text>
@@ -596,6 +605,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
+  },
+  aboutSection: {
+    marginBottom: spacing.xxl,
+  },
+  aboutCard: {
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  aboutText: {
+    color: colors.textMuted,
+    fontSize: 13,
+    lineHeight: 20,
   },
   sectionHeaderCompact: {
     flexDirection: 'column',

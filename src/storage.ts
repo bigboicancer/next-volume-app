@@ -1,7 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { LibrarySnapshot, LibraryTitle } from './types';
-import { clamp, ensureReadVolumesOwned, rangeThrough, statusAfterProgress } from './utils';
+import {
+  briefDescription,
+  clamp,
+  ensureReadVolumesOwned,
+  rangeThrough,
+  statusAfterProgress,
+} from './utils';
 
 const STORAGE_KEY = '@next-volume/library/v1';
 export const INSTALL_PROMPT_DISMISSED_KEY = '@next-volume/install-prompt-dismissed/v1';
@@ -43,6 +49,7 @@ function sanitiseTitle(value: LibraryTitle): LibraryTitle {
 
   return {
     ...value,
+    description: briefDescription(value.description, 600),
     ownedVolumes: ownedVolumeNumbers.length,
     ownedVolumeNumbers,
     totalVolumes,

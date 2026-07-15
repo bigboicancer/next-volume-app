@@ -8,6 +8,28 @@ export function makeId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
+export function briefDescription(value?: string, maximum = 480): string | undefined {
+  const clean = value
+    ?.replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) return undefined;
+  if (clean.length <= maximum) return clean;
+
+  const excerpt = clean.slice(0, maximum + 1);
+  const sentenceEnd = Math.max(
+    excerpt.lastIndexOf('. '),
+    excerpt.lastIndexOf('! '),
+    excerpt.lastIndexOf('? '),
+  );
+  if (sentenceEnd >= Math.floor(maximum * 0.55)) {
+    return excerpt.slice(0, sentenceEnd + 1).trim();
+  }
+
+  const wordEnd = excerpt.lastIndexOf(' ');
+  return `${excerpt.slice(0, wordEnd > 0 ? wordEnd : maximum).trim()}…`;
+}
+
 export function rangeThrough(count: number): number[] {
   return Array.from({ length: Math.max(0, count) }, (_, index) => index + 1);
 }

@@ -30,6 +30,7 @@ export interface LibraryTitle {
   sourceUrl?: string;
   title: string;
   alternativeTitle?: string;
+  description?: string;
   coverUrl?: string;
   kind: MediaKind;
   edition: Edition;

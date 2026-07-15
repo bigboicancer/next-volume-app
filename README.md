@@ -110,6 +110,7 @@ This runs the strict TypeScript check and volume-title parser tests.
 - Series metadata comes from MyAnimeList through the public Jikan API.
 - If Jikan is unavailable, searches automatically continue through Kitsu's public catalogue.
 - English-volume discovery checks Google Books and Open Library for numbered editions.
+- Online catalogue summaries are saved as brief descriptions and can be edited later.
 - Finished series normally have a reliable original total.
 - Ongoing series often report their original total as unknown.
 - English book indexes can lag behind publishers or contain omnibus editions.
