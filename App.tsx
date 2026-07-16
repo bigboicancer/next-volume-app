@@ -1,6 +1,6 @@
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Platform, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 
 import { BottomNav, MainTab } from './src/components/BottomNav';
 import { useLibrary } from './src/hooks/useLibrary';
@@ -106,39 +106,41 @@ export default function App() {
         />
       ) : (
         <View style={styles.main}>
-          {activeTab === 'shelf' ? (
-            <ShelfScreen
-              titles={titles}
-              onAdd={() => setAddVisible(true)}
-              onOpen={setSelectedId}
-              onToggleVolume={toggleVolume}
-              onToggleOnlineVolume={toggleOnlineVolume}
-              filter={shelfPreferences.filter}
-              sort={shelfPreferences.sort}
-              onFilterChange={(filter) =>
-                setShelfPreferences((current) => ({ ...current, filter }))
-              }
-              onSortChange={(sort) =>
-                setShelfPreferences((current) => ({ ...current, sort }))
-              }
-              initialScrollPosition={shelfScrollPosition.current}
-              onScrollPositionChange={(position) => {
-                shelfScrollPosition.current = position;
-              }}
-            />
-          ) : (
-            <StatsScreen
-              titles={titles}
-              onEraseAllData={eraseAllData}
-              onExportBackup={exportBackup}
-              onChooseImportBackup={chooseImportBackup}
-              onRestoreBackup={restoreBackup}
-              initialScrollPosition={statsScrollPosition.current}
-              onScrollPositionChange={(position) => {
-                statsScrollPosition.current = position;
-              }}
-            />
-          )}
+          <View style={styles.contentLayer}>
+            {activeTab === 'shelf' ? (
+              <ShelfScreen
+                titles={titles}
+                onAdd={() => setAddVisible(true)}
+                onOpen={setSelectedId}
+                onToggleVolume={toggleVolume}
+                onToggleOnlineVolume={toggleOnlineVolume}
+                filter={shelfPreferences.filter}
+                sort={shelfPreferences.sort}
+                onFilterChange={(filter) =>
+                  setShelfPreferences((current) => ({ ...current, filter }))
+                }
+                onSortChange={(sort) =>
+                  setShelfPreferences((current) => ({ ...current, sort }))
+                }
+                initialScrollPosition={shelfScrollPosition.current}
+                onScrollPositionChange={(position) => {
+                  shelfScrollPosition.current = position;
+                }}
+              />
+            ) : (
+              <StatsScreen
+                titles={titles}
+                onEraseAllData={eraseAllData}
+                onExportBackup={exportBackup}
+                onChooseImportBackup={chooseImportBackup}
+                onRestoreBackup={restoreBackup}
+                initialScrollPosition={statsScrollPosition.current}
+                onScrollPositionChange={(position) => {
+                  statsScrollPosition.current = position;
+                }}
+              />
+            )}
+          </View>
           <BottomNav
             active={activeTab}
             onChange={setActiveTab}
@@ -177,6 +179,16 @@ const styles = StyleSheet.create({
   main: {
     flex: 1,
     backgroundColor: colors.background,
+  },
+  contentLayer: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom:
+      Platform.OS === 'web'
+        ? ('calc(0px - var(--next-volume-bottom-extension))' as `${number}%`)
+        : 0,
+    left: 0,
   },
   loading: {
     flex: 1,
