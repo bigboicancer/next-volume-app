@@ -16,6 +16,7 @@ import {
   statusAfterProgress,
   unownedReadVolumes,
   completionMethodOf,
+  completionLabelOf,
   totalReadCount,
   nextUnreadUnownedVolume,
 } from '../src/utils';
@@ -117,6 +118,11 @@ expectEqual(
   'mixed completion detection',
 );
 expectEqual(
+  completionLabelOf({ ...backupFixture, onlineReadVolumes: [2, 3] }),
+  'Complete · mixed',
+  'mixed completion label',
+);
+expectEqual(
   completionMethodOf({
     ...backupFixture,
     ownedVolumes: 0,
@@ -126,6 +132,28 @@ expectEqual(
   }),
   'online',
   'online-only completion detection',
+);
+expectEqual(
+  completionLabelOf({
+    ...backupFixture,
+    ownedVolumes: 0,
+    ownedVolumeNumbers: [],
+    readVolumes: [],
+    onlineReadVolumes: [1, 2, 3],
+  }),
+  'Complete online',
+  'online-only completion label',
+);
+expectEqual(
+  completionLabelOf({
+    ...backupFixture,
+    onlineReadVolumes: [],
+    readVolumes: [1, 2, 3],
+    ownedVolumes: 3,
+    ownedVolumeNumbers: [1, 2, 3],
+  }),
+  'Complete',
+  'owned completion label',
 );
 
 async function expectProviderResilience() {

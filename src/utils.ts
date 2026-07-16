@@ -113,6 +113,21 @@ export function completionMethodOf(title: LibraryTitle): 'owned' | 'online' | 'm
   return 'mixed';
 }
 
+export function completionLabelOf(
+  title: LibraryTitle,
+): 'Complete' | 'Complete online' | 'Complete · mixed' | undefined {
+  switch (completionMethodOf(title)) {
+    case 'owned':
+      return 'Complete';
+    case 'online':
+      return 'Complete online';
+    case 'mixed':
+      return 'Complete · mixed';
+    default:
+      return undefined;
+  }
+}
+
 export function unownedReadVolumes(readVolumes: number[], ownedVolumes: number[]): number[] {
   const owned = new Set(ownedVolumes);
   return [...new Set(readVolumes)].filter((volume) => !owned.has(volume)).sort((a, b) => a - b);

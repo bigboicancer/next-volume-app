@@ -4,6 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle } from '../types';
 import {
+  completionLabelOf,
   completionMethodOf,
   nextUnreadOwnedVolume,
   nextUnreadUnownedVolume,
@@ -35,6 +36,7 @@ export function SeriesCard({
   const onlineCount = onlineReadVolumesOf(title).length;
   const ownedCount = ownedVolumeCount(title);
   const completionMethod = completionMethodOf(title);
+  const completionLabel = completionLabelOf(title);
   const completedOnline = completionMethod === 'online';
   const completedMixed = completionMethod === 'mixed';
   const onlineOnlyNext = ownedCount === 0 && Boolean(nextOnline);
@@ -180,11 +182,7 @@ export function SeriesCard({
                 ? `Finish vol. ${next}`
                 : onlineOnlyNext
                   ? 'Read next online'
-                  : completedOnline
-                    ? 'Completed online'
-                    : completedMixed
-                      ? 'Complete · mixed'
-                      : 'Complete'}
+                  : completionLabel ?? 'Complete'}
             </Text>
           </Pressable>
         )}
