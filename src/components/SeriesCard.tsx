@@ -6,7 +6,7 @@ import { LibraryTitle } from '../types';
 import {
   isCompletedOnline,
   nextUnreadOwnedVolume,
-  nextUnreadVolume,
+  nextUnreadUnownedVolume,
   onlineReadVolumesOf,
   ownedVolumeCount,
   progressOf,
@@ -19,15 +19,24 @@ interface SeriesCardProps {
   width: number;
   onOpen: () => void;
   onMarkNext: () => void;
+  onMarkNextOnline: () => void;
 }
 
-export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps) {
+export function SeriesCard({
+  title,
+  width,
+  onOpen,
+  onMarkNext,
+  onMarkNextOnline,
+}: SeriesCardProps) {
   const next = nextUnreadOwnedVolume(title);
-  const nextInSeries = nextUnreadVolume(title);
-  const caughtUpWithOwned = !next && Boolean(nextInSeries);
+  const nextOnline = nextUnreadUnownedVolume(title);
   const progress = progressOf(title);
   const onlineCount = onlineReadVolumesOf(title).length;
+  const ownedCount = ownedVolumeCount(title);
   const completedOnline = isCompletedOnline(title);
+  const onlineOnlyNext = ownedCount === 0 && Boolean(nextOnline);
+  const caughtUpWithOwned = ownedCount > 0 && !next && Boolean(nextOnline);
 
   return (
     <Pressable
@@ -55,70 +64,97 @@ export function SeriesCard({ title, width, onOpen, onMarkNext }: SeriesCardProps
         </Text>
         <Text style={styles.meta}>
           {totalReadCount(title)} read
-          {onlineCount ? ` · ${onlineCount} online` : ''} · {ownedVolumeCount(title)} owned
+          {onlineCount ? ` · ${onlineCount} online` : ''} · {ownedCount} owned
         </Text>
         <ProgressBar progress={progress} />
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={
-            next
-              ? `Mark volume ${next} read`
-              : caughtUpWithOwned
-                ? `${title.title} owned volumes caught up`
-                : `${title.title} completed`
-          }
-          disabled={!next}
-          onPress={(event) => {
-            event.stopPropagation();
-            onMarkNext();
-          }}
-          style={({ pressed }) => [
-            styles.nextButton,
-            !next && styles.completeButton,
-            completedOnline && styles.onlineCompleteButton,
-            caughtUpWithOwned && styles.caughtUpButton,
-            pressed && styles.nextPressed,
-          ]}
-        >
-          <Ionicons
-            name={
+        {caughtUpWithOwned ? (
+          <View style={styles.caughtUpActions}>
+            <View style={[styles.nextButton, styles.splitButton, styles.caughtUpButton]}>
+              <Ionicons name="albums-outline" size={15} color={colors.accent} />
+              <Text style={[styles.nextLabel, styles.caughtUpLabel]} numberOfLines={2}>
+                Owned caught up
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Mark volume ${nextOnline} read online`}
+              onPress={(event) => {
+                event.stopPropagation();
+                onMarkNextOnline();
+              }}
+              style={({ pressed }) => [
+                styles.nextButton,
+                styles.splitButton,
+                styles.readOnlineButton,
+                pressed && styles.nextPressed,
+              ]}
+            >
+              <Ionicons name="globe-outline" size={15} color={colors.blue} />
+              <Text style={[styles.nextLabel, styles.readOnlineLabel]} numberOfLines={2}>
+                Read next online
+              </Text>
+            </Pressable>
+          </View>
+        ) : (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={
               next
-                ? 'checkmark-circle-outline'
-                : caughtUpWithOwned
-                  ? 'albums-outline'
-                  : completedOnline
-                    ? 'globe-outline'
-                    : 'checkmark-circle'
+                ? `Mark volume ${next} read`
+                : onlineOnlyNext
+                  ? `Mark volume ${nextOnline} read online`
+                  : `${title.title} completed`
             }
-            size={17}
-            color={
-              next
-                ? colors.background
-                : caughtUpWithOwned
-                  ? colors.accent
-                  : completedOnline
-                    ? colors.blue
-                    : colors.green
-            }
-          />
-          <Text
-            style={[
-              styles.nextLabel,
-              !next && styles.completeLabel,
-              completedOnline && styles.onlineCompleteLabel,
-              caughtUpWithOwned && styles.caughtUpLabel,
+            disabled={!next && !onlineOnlyNext}
+            onPress={(event) => {
+              event.stopPropagation();
+              if (next) onMarkNext();
+              else if (onlineOnlyNext) onMarkNextOnline();
+            }}
+            style={({ pressed }) => [
+              styles.nextButton,
+              !next && !onlineOnlyNext && styles.completeButton,
+              completedOnline && styles.onlineCompleteButton,
+              onlineOnlyNext && styles.readOnlineButton,
+              pressed && styles.nextPressed,
             ]}
           >
-            {next
-              ? `Finish vol. ${next}`
-              : caughtUpWithOwned
-                ? 'Owned caught up'
-                : completedOnline
-                  ? 'Completed online'
-                  : 'Complete'}
-          </Text>
-        </Pressable>
+            <Ionicons
+              name={
+                next
+                  ? 'checkmark-circle-outline'
+                  : onlineOnlyNext || completedOnline
+                    ? 'globe-outline'
+                    : 'checkmark-circle'
+              }
+              size={17}
+              color={
+                next
+                  ? colors.background
+                  : onlineOnlyNext || completedOnline
+                    ? colors.blue
+                    : colors.green
+              }
+            />
+            <Text
+              style={[
+                styles.nextLabel,
+                !next && !onlineOnlyNext && styles.completeLabel,
+                completedOnline && styles.onlineCompleteLabel,
+                onlineOnlyNext && styles.readOnlineLabel,
+              ]}
+            >
+              {next
+                ? `Finish vol. ${next}`
+                : onlineOnlyNext
+                  ? 'Read next online'
+                  : completedOnline
+                    ? 'Completed online'
+                    : 'Complete'}
+            </Text>
+          </Pressable>
+        )}
       </View>
     </Pressable>
   );
@@ -207,6 +243,22 @@ const styles = StyleSheet.create({
     borderColor: '#493E2D',
     backgroundColor: '#312A22',
   },
+  caughtUpActions: {
+    marginTop: spacing.xs,
+    flexDirection: 'row',
+    gap: 6,
+  },
+  splitButton: {
+    minWidth: 0,
+    marginTop: 0,
+    paddingHorizontal: 5,
+    flex: 1,
+  },
+  readOnlineButton: {
+    borderWidth: 1,
+    borderColor: colors.blueSoft,
+    backgroundColor: colors.blueSoft,
+  },
   nextPressed: {
     opacity: 0.75,
   },
@@ -223,5 +275,14 @@ const styles = StyleSheet.create({
   },
   caughtUpLabel: {
     color: colors.accent,
+    fontSize: 10,
+    lineHeight: 12,
+    textAlign: 'center',
+  },
+  readOnlineLabel: {
+    color: colors.blue,
+    fontSize: 10,
+    lineHeight: 12,
+    textAlign: 'center',
   },
 });

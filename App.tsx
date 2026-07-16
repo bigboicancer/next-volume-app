@@ -112,6 +112,7 @@ export default function App() {
               onAdd={() => setAddVisible(true)}
               onOpen={setSelectedId}
               onToggleVolume={toggleVolume}
+              onToggleOnlineVolume={toggleOnlineVolume}
               filter={shelfPreferences.filter}
               sort={shelfPreferences.sort}
               onFilterChange={(filter) =>

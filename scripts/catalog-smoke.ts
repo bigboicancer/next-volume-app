@@ -17,6 +17,7 @@ import {
   unownedReadVolumes,
   isCompletedOnline,
   totalReadCount,
+  nextUnreadUnownedVolume,
 } from '../src/utils';
 
 function expectEqual(actual: unknown, expected: unknown, label: string) {
@@ -104,6 +105,12 @@ expectEqual(restoredBackup[0]?.readVolumes, [1], 'backup progress restore');
 expectEqual(restoredBackup[0]?.onlineReadVolumes, [2], 'backup online progress restore');
 expectEqual(restoredBackup[0]?.coverUrl, backupFixture.coverUrl, 'uploaded cover backup restore');
 expectEqual(totalReadCount(backupFixture), 2, 'online reads count toward total progress');
+expectEqual(nextUnreadUnownedVolume(backupFixture), undefined, 'owned gaps excluded from online next');
+expectEqual(
+  nextUnreadUnownedVolume({ ...backupFixture, totalVolumes: 5 }),
+  4,
+  'next unread unowned volume',
+);
 expectEqual(
   isCompletedOnline({ ...backupFixture, onlineReadVolumes: [2, 3] }),
   true,

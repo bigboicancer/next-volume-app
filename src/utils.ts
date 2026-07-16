@@ -149,6 +149,12 @@ export function nextUnreadOwnedVolume(title: LibraryTitle): number | undefined {
   return ownedVolumeNumbersOf(title).find((volume) => !read.has(volume));
 }
 
+export function nextUnreadUnownedVolume(title: LibraryTitle): number | undefined {
+  const read = new Set(allReadVolumeNumbersOf(title));
+  const owned = new Set(ownedVolumeNumbersOf(title));
+  return rangeThrough(title.totalVolumes).find((volume) => !owned.has(volume) && !read.has(volume));
+}
+
 export function statusAfterProgress(
   readCount: number,
   totalVolumes: number,

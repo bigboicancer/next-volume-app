@@ -21,6 +21,7 @@ import { LibraryTitle, ShelfFilter, ShelfSort } from '../types';
 import {
   lastActivity,
   nextUnreadOwnedVolume,
+  nextUnreadUnownedVolume,
   nextUnreadVolume,
   ownedVolumeCount,
   progressOf,
@@ -32,6 +33,7 @@ interface ShelfScreenProps {
   onAdd: () => void;
   onOpen: (id: string) => void;
   onToggleVolume: (id: string, volume: number) => void;
+  onToggleOnlineVolume: (id: string, volume: number) => void;
   filter: ShelfFilter;
   sort: ShelfSort;
   onFilterChange: (filter: ShelfFilter) => void;
@@ -119,6 +121,7 @@ export function ShelfScreen({
   onAdd,
   onOpen,
   onToggleVolume,
+  onToggleOnlineVolume,
   filter,
   sort,
   onFilterChange,
@@ -309,6 +312,7 @@ export function ShelfScreen({
           <View style={styles.grid}>
             {filtered.map((title) => {
               const next = nextUnreadOwnedVolume(title);
+              const nextOnline = nextUnreadUnownedVolume(title);
               return (
                 <SeriesCard
                   key={title.id}
@@ -317,6 +321,9 @@ export function ShelfScreen({
                   onOpen={() => onOpen(title.id)}
                   onMarkNext={() => {
                     if (next) onToggleVolume(title.id, next);
+                  }}
+                  onMarkNextOnline={() => {
+                    if (nextOnline) onToggleOnlineVolume(title.id, nextOnline);
                   }}
                 />
               );
