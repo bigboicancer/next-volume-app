@@ -131,6 +131,57 @@ function NextUpCard({
   );
 }
 
+function NextUpCarousel({
+  titles,
+  width,
+  onOpen,
+  onMark,
+}: {
+  titles: LibraryTitle[];
+  width: number;
+  onOpen: (id: string) => void;
+  onMark: (title: LibraryTitle) => void;
+}) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const visibleIndex = Math.min(activeIndex, Math.max(0, titles.length - 1));
+
+  return (
+    <View style={styles.nextCarousel}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        nestedScrollEnabled
+        directionalLockEnabled
+        showsHorizontalScrollIndicator={false}
+        decelerationRate="fast"
+        snapToInterval={width}
+        scrollEventThrottle={16}
+        onMomentumScrollEnd={(event) => {
+          setActiveIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+        }}
+      >
+        {titles.map((title) => (
+          <View key={title.id} style={[styles.nextSlide, { width }]}>
+            <NextUpCard
+              title={title}
+              onOpen={() => onOpen(title.id)}
+              onMark={() => onMark(title)}
+            />
+          </View>
+        ))}
+      </ScrollView>
+      {titles.length > 1 ? (
+        <View style={styles.nextPager}>
+          <Ionicons name="swap-horizontal" size={15} color={colors.textDim} />
+          <Text style={styles.nextPagerText}>
+            Swipe for another · {visibleIndex + 1} of {titles.length}
+          </Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
 export function ShelfScreen({
   titles,
   onAdd,
@@ -157,12 +208,20 @@ export function ShelfScreen({
     return () => clearTimeout(timer);
   }, [initialScrollPosition]);
 
-  const nextUp = useMemo(
+  const nextUpCandidates = useMemo(
     () => {
       const candidates = titles.filter(
         (title) => title.status !== 'paused' && nextReadingActionOf(title),
       );
-      return candidates[Math.floor(Math.random() * candidates.length)];
+      for (let index = candidates.length - 1; index > 0; index -= 1) {
+        const randomIndex = Math.floor(Math.random() * (index + 1));
+        const current = candidates[index];
+        const random = candidates[randomIndex];
+        if (!current || !random) continue;
+        candidates[index] = random;
+        candidates[randomIndex] = current;
+      }
+      return candidates;
     },
     [titles],
   );
@@ -220,17 +279,18 @@ export function ShelfScreen({
 
         <InstallPrompt />
 
-        {nextUp ? (
-          <NextUpCard
-            title={nextUp}
-            onOpen={() => onOpen(nextUp.id)}
-            onMark={() => {
-              const nextAction = nextReadingActionOf(nextUp);
+        {nextUpCandidates.length ? (
+          <NextUpCarousel
+            titles={nextUpCandidates}
+            width={availableWidth}
+            onOpen={onOpen}
+            onMark={(title) => {
+              const nextAction = nextReadingActionOf(title);
               if (!nextAction) return;
               if (nextAction.method === 'owned') {
-                onToggleVolume(nextUp.id, nextAction.volume);
+                onToggleVolume(title.id, nextAction.volume);
               } else {
-                onToggleOnlineVolume(nextUp.id, nextAction.volume);
+                onToggleOnlineVolume(title.id, nextAction.volume);
               }
             }}
           />
@@ -434,13 +494,31 @@ const styles = StyleSheet.create({
   },
   nextCard: {
     minHeight: 220,
-    marginBottom: spacing.lg,
     padding: spacing.xl,
     overflow: 'hidden',
     borderRadius: radii.xl,
     borderWidth: 1,
     borderColor: '#443D68',
     ...shadows.card,
+  },
+  nextCarousel: {
+    marginBottom: spacing.lg,
+  },
+  nextSlide: {
+    paddingRight: 1,
+  },
+  nextPager: {
+    minHeight: 28,
+    paddingTop: spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+  },
+  nextPagerText: {
+    color: colors.textDim,
+    fontSize: 11,
+    fontWeight: '700',
   },
   nextTop: {
     flexDirection: 'row',
