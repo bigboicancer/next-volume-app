@@ -249,7 +249,7 @@ export function StatsScreen({
           <StatCard
             icon="cloud-done-outline"
             value={completedOnline}
-            label="Series complete online"
+            label="Online series complete"
             tone={colors.blue}
           />
           <StatCard
