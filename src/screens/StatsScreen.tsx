@@ -15,6 +15,7 @@ import {
 } from '../theme';
 import { LibraryTitle } from '../types';
 import {
+  completionMethodOf,
   nextUnreadOwnedVolume,
   ownedProgressOf,
   ownedReadCount,
@@ -42,7 +43,10 @@ function StatCard({
     | 'albums-outline'
     | 'hourglass-outline'
     | 'library-outline'
-    | 'flame-outline';
+    | 'flame-outline'
+    | 'globe-outline'
+    | 'cloud-done-outline'
+    | 'git-merge-outline';
   value: number;
   label: string;
   tone: string;
@@ -91,6 +95,16 @@ export function StatsScreen({
   const owned = titles.reduce((sum, title) => sum + ownedVolumeCount(title), 0);
   const remaining = Math.max(0, owned - read);
   const completed = titles.filter((title) => title.status === 'completed').length;
+  const readOnline = titles.reduce(
+    (sum, title) => sum + new Set(title.onlineReadVolumes ?? []).size,
+    0,
+  );
+  const completedOnline = titles.filter(
+    (title) => completionMethodOf(title) === 'online',
+  ).length;
+  const completedMixed = titles.filter(
+    (title) => completionMethodOf(title) === 'mixed',
+  ).length;
   const thisWeek = titles.reduce(
     (sum, title) =>
       sum +
@@ -224,6 +238,24 @@ export function StatsScreen({
             icon="library-outline"
             value={completed}
             label="Series complete"
+            tone={colors.purple}
+          />
+          <StatCard
+            icon="globe-outline"
+            value={readOnline}
+            label="Volumes read online"
+            tone={colors.blue}
+          />
+          <StatCard
+            icon="cloud-done-outline"
+            value={completedOnline}
+            label="Series complete online"
+            tone={colors.blue}
+          />
+          <StatCard
+            icon="git-merge-outline"
+            value={completedMixed}
+            label="Mixed series complete"
             tone={colors.purple}
           />
           <StatCard
