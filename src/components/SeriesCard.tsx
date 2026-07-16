@@ -119,7 +119,7 @@ export function SeriesCard({
                 ]}
                 numberOfLines={stackCaughtUpActions ? 1 : 2}
               >
-                Read next online
+                Finish vol. {nextOnline} online
               </Text>
             </Pressable>
           </View>
@@ -181,7 +181,7 @@ export function SeriesCard({
               {next
                 ? `Finish vol. ${next}`
                 : onlineOnlyNext
-                  ? 'Read next online'
+                  ? `Finish vol. ${nextOnline} online`
                   : completionLabel ?? 'Complete'}
             </Text>
           </Pressable>

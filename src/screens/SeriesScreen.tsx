@@ -209,7 +209,7 @@ export function SeriesScreen({
                 <Ionicons name="globe-outline" size={21} color={colors.blue} />
               </View>
               <View style={styles.nextButtonCopy}>
-                <Text style={styles.onlineNextTitle}>Read next online</Text>
+                <Text style={styles.onlineNextTitle}>Finish vol. {nextOnline} online</Text>
                 <Text style={styles.onlineNextText}>Mark volume {nextOnline} as read online.</Text>
               </View>
               <Ionicons name="chevron-forward" size={21} color={colors.blue} />
@@ -239,7 +239,7 @@ export function SeriesScreen({
                   <Ionicons name="globe-outline" size={21} color={colors.blue} />
                 </View>
                 <View style={styles.nextButtonCopy}>
-                  <Text style={styles.onlineNextTitle}>Read next online</Text>
+                  <Text style={styles.onlineNextTitle}>Finish vol. {nextOnline} online</Text>
                   <Text style={styles.onlineNextText}>Mark volume {nextOnline} as read online.</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={21} color={colors.blue} />
