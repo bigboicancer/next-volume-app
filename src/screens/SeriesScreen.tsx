@@ -22,8 +22,8 @@ import {
   completionLabelOf,
   completionMethodOf,
   kindLabel,
+  nextReadingActionOf,
   nextUnreadOwnedVolume,
-  nextUnreadUnownedVolume,
   ownedVolumeCount,
   ownedVolumeNumbersOf,
   onlineReadVolumesOf,
@@ -57,12 +57,14 @@ export function SeriesScreen({
   const [refreshing, setRefreshing] = useState(false);
   const [volumeMode, setVolumeMode] = useState<'read' | 'owned' | 'online'>('read');
   const progress = progressOf(title);
-  const next = nextUnreadOwnedVolume(title);
-  const nextOnline = nextUnreadUnownedVolume(title);
+  const nextAction = nextReadingActionOf(title);
+  const next = nextAction?.method === 'owned' ? nextAction.volume : undefined;
+  const nextOnline = nextAction?.method === 'online' ? nextAction.volume : undefined;
   const readSet = new Set(title.readVolumes);
   const ownedSet = new Set(ownedVolumeNumbersOf(title));
   const onlineSet = new Set(onlineReadVolumesOf(title));
   const ownedCount = ownedVolumeCount(title);
+  const ownedVolumesCaughtUp = ownedCount > 0 && !nextUnreadOwnedVolume(title);
   const onlineCount = onlineSet.size;
   const readCount = totalReadCount(title);
   const completionMethod = completionMethodOf(title);
@@ -198,7 +200,7 @@ export function SeriesScreen({
               </View>
               <Ionicons name="chevron-forward" size={21} color={colors.background} />
             </Pressable>
-          ) : nextOnline && ownedCount === 0 ? (
+          ) : nextOnline && !ownedVolumesCaughtUp ? (
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={`Mark volume ${nextOnline} read online`}

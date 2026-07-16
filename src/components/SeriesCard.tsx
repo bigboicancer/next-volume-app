@@ -6,8 +6,8 @@ import { LibraryTitle } from '../types';
 import {
   completionLabelOf,
   completionMethodOf,
+  nextReadingActionOf,
   nextUnreadOwnedVolume,
-  nextUnreadUnownedVolume,
   onlineReadVolumesOf,
   ownedVolumeCount,
   progressOf,
@@ -30,8 +30,10 @@ export function SeriesCard({
   onMarkNext,
   onMarkNextOnline,
 }: SeriesCardProps) {
-  const next = nextUnreadOwnedVolume(title);
-  const nextOnline = nextUnreadUnownedVolume(title);
+  const nextAction = nextReadingActionOf(title);
+  const next = nextAction?.method === 'owned' ? nextAction.volume : undefined;
+  const nextOnline = nextAction?.method === 'online' ? nextAction.volume : undefined;
+  const hasNextOnline = nextOnline !== undefined;
   const progress = progressOf(title);
   const onlineCount = onlineReadVolumesOf(title).length;
   const ownedCount = ownedVolumeCount(title);
@@ -39,8 +41,8 @@ export function SeriesCard({
   const completionLabel = completionLabelOf(title);
   const completedOnline = completionMethod === 'online';
   const completedMixed = completionMethod === 'mixed';
-  const onlineOnlyNext = ownedCount === 0 && Boolean(nextOnline);
-  const caughtUpWithOwned = ownedCount > 0 && !next && Boolean(nextOnline);
+  const hasUnreadOwned = Boolean(nextUnreadOwnedVolume(title));
+  const caughtUpWithOwned = ownedCount > 0 && !hasUnreadOwned && Boolean(nextOnline);
   const stackCaughtUpActions = width < 230;
 
   return (
@@ -129,22 +131,22 @@ export function SeriesCard({
             accessibilityLabel={
               next
                 ? `Mark volume ${next} read`
-                : onlineOnlyNext
+                : hasNextOnline
                   ? `Mark volume ${nextOnline} read online`
                   : `${title.title} completed`
             }
-            disabled={!next && !onlineOnlyNext}
+            disabled={!next && !hasNextOnline}
             onPress={(event) => {
               event.stopPropagation();
               if (next) onMarkNext();
-              else if (onlineOnlyNext) onMarkNextOnline();
+              else if (hasNextOnline) onMarkNextOnline();
             }}
             style={({ pressed }) => [
               styles.nextButton,
-              !next && !onlineOnlyNext && styles.completeButton,
+              !next && !hasNextOnline && styles.completeButton,
               completedOnline && styles.onlineCompleteButton,
               completedMixed && styles.mixedCompleteButton,
-              onlineOnlyNext && styles.readOnlineButton,
+              hasNextOnline && styles.readOnlineButton,
               pressed && styles.nextPressed,
             ]}
           >
@@ -152,7 +154,7 @@ export function SeriesCard({
               name={
                 next
                   ? 'checkmark-circle-outline'
-                  : onlineOnlyNext || completedOnline
+                  : hasNextOnline || completedOnline
                     ? 'globe-outline'
                     : completedMixed
                       ? 'git-merge-outline'
@@ -162,7 +164,7 @@ export function SeriesCard({
               color={
                 next
                   ? colors.background
-                  : onlineOnlyNext || completedOnline
+                  : hasNextOnline || completedOnline
                     ? colors.blue
                     : completedMixed
                       ? colors.purple
@@ -172,15 +174,15 @@ export function SeriesCard({
             <Text
               style={[
                 styles.nextLabel,
-                !next && !onlineOnlyNext && styles.completeLabel,
+                !next && !hasNextOnline && styles.completeLabel,
                 completedOnline && styles.onlineCompleteLabel,
                 completedMixed && styles.mixedCompleteLabel,
-                onlineOnlyNext && styles.readOnlineLabel,
+                hasNextOnline && styles.readOnlineLabel,
               ]}
             >
               {next
                 ? `Finish vol. ${next}`
-                : onlineOnlyNext
+                : hasNextOnline
                   ? `Finish vol. ${nextOnline} online`
                   : completionLabel ?? 'Complete'}
             </Text>

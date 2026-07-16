@@ -164,6 +164,17 @@ export function nextUnreadVolume(title: LibraryTitle): number | undefined {
   return rangeThrough(title.totalVolumes).find((volume) => !read.has(volume));
 }
 
+export function nextReadingActionOf(
+  title: LibraryTitle,
+): { volume: number; method: 'owned' | 'online' } | undefined {
+  const volume = nextUnreadVolume(title);
+  if (volume === undefined) return undefined;
+  return {
+    volume,
+    method: ownedVolumeNumbersOf(title).includes(volume) ? 'owned' : 'online',
+  };
+}
+
 export function nextUnreadOwnedVolume(title: LibraryTitle): number | undefined {
   const read = new Set(title.readVolumes);
   return ownedVolumeNumbersOf(title).find((volume) => !read.has(volume));

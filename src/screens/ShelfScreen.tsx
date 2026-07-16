@@ -20,8 +20,7 @@ import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle, ShelfFilter, ShelfSort } from '../types';
 import {
   lastActivity,
-  nextUnreadOwnedVolume,
-  nextUnreadUnownedVolume,
+  nextReadingActionOf,
   nextUnreadVolume,
   ownedVolumeCount,
   progressOf,
@@ -51,7 +50,8 @@ function NextUpCard({
   onOpen: () => void;
   onMark: () => void;
 }) {
-  const next = nextUnreadOwnedVolume(title);
+  const nextAction = nextReadingActionOf(title);
+  const next = nextAction?.volume;
 
   return (
     <LinearGradient
@@ -100,8 +100,14 @@ function NextUpCard({
             onPress={onMark}
             style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
           >
-            <Ionicons name="checkmark" size={18} color={colors.background} />
-            <Text style={styles.primaryButtonText}>Finish vol. {next}</Text>
+            <Ionicons
+              name={nextAction?.method === 'online' ? 'globe-outline' : 'checkmark'}
+              size={18}
+              color={colors.background}
+            />
+            <Text style={styles.primaryButtonText}>
+              Finish vol. {next}{nextAction?.method === 'online' ? ' online' : ''}
+            </Text>
           </Pressable>
         ) : null}
         <Pressable
@@ -145,7 +151,7 @@ export function ShelfScreen({
   const nextUp = useMemo(
     () => {
       const candidates = titles.filter(
-        (title) => title.status !== 'paused' && nextUnreadOwnedVolume(title),
+        (title) => title.status !== 'paused' && nextReadingActionOf(title),
       );
       return candidates[Math.floor(Math.random() * candidates.length)];
     },
@@ -210,8 +216,13 @@ export function ShelfScreen({
             title={nextUp}
             onOpen={() => onOpen(nextUp.id)}
             onMark={() => {
-              const next = nextUnreadOwnedVolume(nextUp);
-              if (next) onToggleVolume(nextUp.id, next);
+              const nextAction = nextReadingActionOf(nextUp);
+              if (!nextAction) return;
+              if (nextAction.method === 'owned') {
+                onToggleVolume(nextUp.id, nextAction.volume);
+              } else {
+                onToggleOnlineVolume(nextUp.id, nextAction.volume);
+              }
             }}
           />
         ) : titles.length ? (
@@ -311,8 +322,9 @@ export function ShelfScreen({
         {filtered.length ? (
           <View style={styles.grid}>
             {filtered.map((title) => {
-              const next = nextUnreadOwnedVolume(title);
-              const nextOnline = nextUnreadUnownedVolume(title);
+              const nextAction = nextReadingActionOf(title);
+              const next = nextAction?.method === 'owned' ? nextAction.volume : undefined;
+              const nextOnline = nextAction?.method === 'online' ? nextAction.volume : undefined;
               return (
                 <SeriesCard
                   key={title.id}

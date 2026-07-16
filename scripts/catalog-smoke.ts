@@ -19,6 +19,7 @@ import {
   completionLabelOf,
   totalReadCount,
   nextUnreadUnownedVolume,
+  nextReadingActionOf,
 } from '../src/utils';
 
 function expectEqual(actual: unknown, expected: unknown, label: string) {
@@ -111,6 +112,18 @@ expectEqual(
   nextUnreadUnownedVolume({ ...backupFixture, totalVolumes: 5 }),
   4,
   'next unread unowned volume',
+);
+expectEqual(
+  nextReadingActionOf({
+    ...backupFixture,
+    totalVolumes: 5,
+    ownedVolumes: 2,
+    ownedVolumeNumbers: [1, 4],
+    readVolumes: [1],
+    onlineReadVolumes: [],
+  }),
+  { volume: 2, method: 'online' },
+  'first unread gap is suggested before a later owned volume',
 );
 expectEqual(
   completionMethodOf({ ...backupFixture, onlineReadVolumes: [2, 3] }),
