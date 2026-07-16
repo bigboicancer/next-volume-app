@@ -41,10 +41,14 @@ export function EditTitleModal({
   const [edition, setEdition] = useState<Edition>('english');
   const [status, setStatus] = useState<ReadingStatus>('reading');
   const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+  const [leaveConfirmVisible, setLeaveConfirmVisible] = useState(false);
+  const [loadedTitleId, setLoadedTitleId] = useState<string>();
 
   useEffect(() => {
     if (!visible) {
       setDeleteConfirmVisible(false);
+      setLeaveConfirmVisible(false);
+      setLoadedTitleId(undefined);
       return;
     }
     if (!title) return;
@@ -56,9 +60,42 @@ export function EditTitleModal({
     setEdition(title.edition);
     setStatus(title.status);
     setDeleteConfirmVisible(false);
+    setLeaveConfirmVisible(false);
+    setLoadedTitleId(title.id);
   }, [title, visible]);
 
   if (!title) return null;
+
+  const hasUnsavedChanges =
+    loadedTitleId === title.id &&
+    (name !== title.title ||
+      description !== (title.description || '') ||
+      coverUrl !== title.coverUrl ||
+      total !== title.totalVolumes ||
+      ownedInput !== formatVolumeSelection(ownedVolumeNumbersOf(title)) ||
+      edition !== title.edition ||
+      status !== title.status);
+
+  function requestClose() {
+    if (deleteConfirmVisible) {
+      setDeleteConfirmVisible(false);
+      return;
+    }
+    if (leaveConfirmVisible) {
+      setLeaveConfirmVisible(false);
+      return;
+    }
+    if (hasUnsavedChanges) {
+      setLeaveConfirmVisible(true);
+      return;
+    }
+    onClose();
+  }
+
+  function leaveUnchanged() {
+    setLeaveConfirmVisible(false);
+    onClose();
+  }
 
   function save() {
     const cleanName = name.trim();
@@ -108,10 +145,10 @@ export function EditTitleModal({
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={requestClose}
     >
       <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
+        <Pressable style={StyleSheet.absoluteFill} onPress={requestClose} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.header}>
@@ -122,7 +159,7 @@ export function EditTitleModal({
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Close"
-              onPress={onClose}
+              onPress={requestClose}
               style={({ pressed }) => [styles.closeButton, pressed && styles.pressed]}
             >
               <Ionicons name="close" size={22} color={colors.text} />
@@ -301,6 +338,42 @@ export function EditTitleModal({
                 >
                   <Ionicons name="trash-outline" size={17} color={colors.text} />
                   <Text style={styles.confirmDeleteText}>Remove</Text>
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {leaveConfirmVisible ? (
+          <View style={styles.confirmLayer} accessibilityViewIsModal>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Keep editing"
+              style={StyleSheet.absoluteFill}
+              onPress={() => setLeaveConfirmVisible(false)}
+            />
+            <View style={[styles.confirmCard, styles.leaveConfirmCard]}>
+              <View style={[styles.confirmIcon, styles.leaveConfirmIcon]}>
+                <Ionicons name="create-outline" size={22} color={colors.accent} />
+              </View>
+              <Text style={styles.confirmTitle}>Leave settings unchanged?</Text>
+              <Text style={styles.confirmText}>
+                Your edits have not been saved. Leaving now will discard them.
+              </Text>
+              <View style={styles.confirmActions}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => setLeaveConfirmVisible(false)}
+                  style={({ pressed }) => [styles.cancelButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.cancelText}>Keep editing</Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={leaveUnchanged}
+                  style={({ pressed }) => [styles.leaveButton, pressed && styles.pressed]}
+                >
+                  <Text style={styles.leaveButtonText}>Leave unchanged</Text>
                 </Pressable>
               </View>
             </View>
@@ -557,6 +630,9 @@ const styles = StyleSheet.create({
     borderColor: colors.dangerSoft,
     backgroundColor: colors.surface,
   },
+  leaveConfirmCard: {
+    borderColor: colors.border,
+  },
   confirmIcon: {
     width: 44,
     height: 44,
@@ -565,6 +641,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: radii.md,
     backgroundColor: colors.dangerSoft,
+  },
+  leaveConfirmIcon: {
+    backgroundColor: '#312A22',
   },
   confirmTitle: {
     color: colors.text,
@@ -596,6 +675,19 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     fontWeight: '800',
+  },
+  leaveButton: {
+    minHeight: 46,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.md,
+    backgroundColor: colors.accent,
+  },
+  leaveButtonText: {
+    color: colors.background,
+    fontSize: 13,
+    fontWeight: '900',
   },
   confirmDeleteButton: {
     minHeight: 46,
