@@ -15,7 +15,7 @@ import {
   parseVolumeSelection,
   statusAfterProgress,
   unownedReadVolumes,
-  isCompletedOnline,
+  completionMethodOf,
   totalReadCount,
   nextUnreadUnownedVolume,
 } from '../src/utils';
@@ -112,9 +112,20 @@ expectEqual(
   'next unread unowned volume',
 );
 expectEqual(
-  isCompletedOnline({ ...backupFixture, onlineReadVolumes: [2, 3] }),
-  true,
-  'online completion detection',
+  completionMethodOf({ ...backupFixture, onlineReadVolumes: [2, 3] }),
+  'mixed',
+  'mixed completion detection',
+);
+expectEqual(
+  completionMethodOf({
+    ...backupFixture,
+    ownedVolumes: 0,
+    ownedVolumeNumbers: [],
+    readVolumes: [],
+    onlineReadVolumes: [1, 2, 3],
+  }),
+  'online',
+  'online-only completion detection',
 );
 
 async function expectProviderResilience() {

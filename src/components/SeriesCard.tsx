@@ -4,7 +4,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radii, shadows, spacing } from '../theme';
 import { LibraryTitle } from '../types';
 import {
-  isCompletedOnline,
+  completionMethodOf,
   nextUnreadOwnedVolume,
   nextUnreadUnownedVolume,
   onlineReadVolumesOf,
@@ -34,7 +34,9 @@ export function SeriesCard({
   const progress = progressOf(title);
   const onlineCount = onlineReadVolumesOf(title).length;
   const ownedCount = ownedVolumeCount(title);
-  const completedOnline = isCompletedOnline(title);
+  const completionMethod = completionMethodOf(title);
+  const completedOnline = completionMethod === 'online';
+  const completedMixed = completionMethod === 'mixed';
   const onlineOnlyNext = ownedCount === 0 && Boolean(nextOnline);
   const caughtUpWithOwned = ownedCount > 0 && !next && Boolean(nextOnline);
   const stackCaughtUpActions = width < 230;
@@ -139,6 +141,7 @@ export function SeriesCard({
               styles.nextButton,
               !next && !onlineOnlyNext && styles.completeButton,
               completedOnline && styles.onlineCompleteButton,
+              completedMixed && styles.mixedCompleteButton,
               onlineOnlyNext && styles.readOnlineButton,
               pressed && styles.nextPressed,
             ]}
@@ -149,7 +152,9 @@ export function SeriesCard({
                   ? 'checkmark-circle-outline'
                   : onlineOnlyNext || completedOnline
                     ? 'globe-outline'
-                    : 'checkmark-circle'
+                    : completedMixed
+                      ? 'git-merge-outline'
+                      : 'checkmark-circle'
               }
               size={17}
               color={
@@ -157,7 +162,9 @@ export function SeriesCard({
                   ? colors.background
                   : onlineOnlyNext || completedOnline
                     ? colors.blue
-                    : colors.green
+                    : completedMixed
+                      ? colors.purple
+                      : colors.green
               }
             />
             <Text
@@ -165,6 +172,7 @@ export function SeriesCard({
                 styles.nextLabel,
                 !next && !onlineOnlyNext && styles.completeLabel,
                 completedOnline && styles.onlineCompleteLabel,
+                completedMixed && styles.mixedCompleteLabel,
                 onlineOnlyNext && styles.readOnlineLabel,
               ]}
             >
@@ -174,7 +182,9 @@ export function SeriesCard({
                   ? 'Read next online'
                   : completedOnline
                     ? 'Completed online'
-                    : 'Complete'}
+                    : completedMixed
+                      ? 'Complete · mixed'
+                      : 'Complete'}
             </Text>
           </Pressable>
         )}
@@ -262,6 +272,10 @@ const styles = StyleSheet.create({
     borderColor: colors.blueSoft,
     backgroundColor: colors.blueSoft,
   },
+  mixedCompleteButton: {
+    borderColor: colors.purpleSoft,
+    backgroundColor: colors.purpleSoft,
+  },
   caughtUpButton: {
     borderColor: '#493E2D',
     backgroundColor: '#312A22',
@@ -303,6 +317,9 @@ const styles = StyleSheet.create({
   },
   onlineCompleteLabel: {
     color: colors.blue,
+  },
+  mixedCompleteLabel: {
+    color: colors.purple,
   },
   caughtUpLabel: {
     color: colors.accent,

@@ -104,8 +104,13 @@ export function totalReadCount(title: LibraryTitle): number {
   return allReadVolumeNumbersOf(title).length;
 }
 
-export function isCompletedOnline(title: LibraryTitle): boolean {
-  return onlineReadVolumesOf(title).length > 0 && totalReadCount(title) >= title.totalVolumes;
+export function completionMethodOf(title: LibraryTitle): 'owned' | 'online' | 'mixed' | undefined {
+  if (title.totalVolumes <= 0 || totalReadCount(title) < title.totalVolumes) return undefined;
+  const onlineCount = onlineReadVolumesOf(title).length;
+  const ownedReadCount = [...new Set(title.readVolumes)].length;
+  if (onlineCount === 0) return 'owned';
+  if (ownedReadCount === 0) return 'online';
+  return 'mixed';
 }
 
 export function unownedReadVolumes(readVolumes: number[], ownedVolumes: number[]): number[] {

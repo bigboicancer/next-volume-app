@@ -19,7 +19,7 @@ import { colors, radii, spacing } from '../theme';
 import { LibraryTitle } from '../types';
 import {
   formatShortDate,
-  isCompletedOnline,
+  completionMethodOf,
   kindLabel,
   nextUnreadOwnedVolume,
   nextUnreadUnownedVolume,
@@ -64,7 +64,9 @@ export function SeriesScreen({
   const ownedCount = ownedVolumeCount(title);
   const onlineCount = onlineSet.size;
   const readCount = totalReadCount(title);
-  const completedOnline = isCompletedOnline(title);
+  const completionMethod = completionMethodOf(title);
+  const completedOnline = completionMethod === 'online';
+  const completedMixed = completionMethod === 'mixed';
 
   async function refresh() {
     if (refreshing) return;
@@ -155,7 +157,11 @@ export function SeriesScreen({
                 </View>
                 <View style={[styles.badge, styles.statusBadge]}>
                   <Text style={[styles.badgeText, styles.statusBadgeText]}>
-                    {completedOnline ? 'COMPLETED ONLINE' : statusLabel(title.status).toUpperCase()}
+                    {completedOnline
+                      ? 'COMPLETED ONLINE'
+                      : completedMixed
+                        ? 'COMPLETE · MIXED'
+                        : statusLabel(title.status).toUpperCase()}
                   </Text>
                 </View>
               </View>
@@ -248,8 +254,10 @@ export function SeriesScreen({
                 <Text style={styles.finishedTitle}>All caught up</Text>
                 <Text style={styles.finishedText}>
                   {completedOnline
-                    ? `Every volume is read, including ${onlineCount} read online.`
-                    : 'Every tracked volume is marked read.'}
+                    ? 'Every tracked volume was read online.'
+                    : completedMixed
+                      ? `Every volume is read: ${ownedCount} owned and ${onlineCount} online.`
+                      : 'Every tracked volume is marked read.'}
                 </Text>
               </View>
             </View>
