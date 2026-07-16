@@ -98,14 +98,23 @@ function NextUpCard({
           <Pressable
             accessibilityRole="button"
             onPress={onMark}
-            style={({ pressed }) => [styles.primaryButton, pressed && styles.buttonPressed]}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              nextAction?.method === 'online' && styles.onlinePrimaryButton,
+              pressed && styles.buttonPressed,
+            ]}
           >
             <Ionicons
               name={nextAction?.method === 'online' ? 'globe-outline' : 'checkmark'}
               size={18}
-              color={colors.background}
+              color={nextAction?.method === 'online' ? colors.blue : colors.background}
             />
-            <Text style={styles.primaryButtonText}>
+            <Text
+              style={[
+                styles.primaryButtonText,
+                nextAction?.method === 'online' && styles.onlinePrimaryButtonText,
+              ]}
+            >
               Finish vol. {next}{nextAction?.method === 'online' ? ' online' : ''}
             </Text>
           </Pressable>
@@ -522,6 +531,14 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontSize: 13,
     fontWeight: '900',
+  },
+  onlinePrimaryButton: {
+    borderWidth: 1,
+    borderColor: colors.blueSoft,
+    backgroundColor: colors.blueSoft,
+  },
+  onlinePrimaryButtonText: {
+    color: colors.blue,
   },
   ghostButton: {
     minHeight: 40,
