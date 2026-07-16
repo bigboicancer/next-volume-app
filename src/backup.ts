@@ -50,18 +50,31 @@ export async function shareOrDownloadBackup(titles: LibraryTitle[]): Promise<'sh
   }
   const name = backupFileName();
   const blob = new Blob([createPortableBackup(titles)], { type: 'application/json' });
-  const file = new File([blob], name, { type: 'application/json' });
-  const shareData = { title: 'Next Volume backup', files: [file] };
-
-  if (navigator.share && navigator.canShare?.(shareData)) {
-    await navigator.share(shareData);
-    return 'shared';
+  if (navigator.share && typeof File !== 'undefined') {
+    try {
+      const file = new File([blob], name, { type: 'application/json', lastModified: Date.now() });
+      const shareData = {
+        title: 'Next Volume backup',
+        text: 'Next Volume shelf backup',
+        files: [file],
+      };
+      const canShareFiles = typeof navigator.canShare !== 'function' || navigator.canShare(shareData);
+      if (canShareFiles) {
+        await navigator.share(shareData);
+        return 'shared';
+      }
+    } catch (error) {
+      if ((error as Error).name === 'AbortError') throw error;
+      // Android browsers can report file sharing support and still reject it. Download instead.
+    }
   }
 
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
   link.download = name;
+  link.rel = 'noopener';
+  link.style.display = 'none';
   document.body.appendChild(link);
   link.click();
   link.remove();

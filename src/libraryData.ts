@@ -76,6 +76,7 @@ export function sanitiseLibraryTitle(input: unknown): LibraryTitle {
     ...value,
     title: value.title.trim(),
     description: briefDescription(value.description, 600),
+    coverUrl: typeof value.coverUrl === 'string' && value.coverUrl ? value.coverUrl : undefined,
     ownedVolumes: ownedVolumeNumbers.length,
     ownedVolumeNumbers,
     totalVolumes,

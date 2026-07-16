@@ -20,6 +20,7 @@ Next Volume is a private, local-first manga and light-novel tracker for iPhone, 
 - Refreshes online counts without ever reducing a manually chosen total.
 - Stores the shelf on the device with no account required.
 - Supports completely manual entries for obscure editions and box sets.
+- Lets manual entries upload a cover and lets every saved title replace or remove its cover.
 
 ## Install it on an iPhone Home Screen
 
@@ -122,7 +123,7 @@ For those reasons, Next Volume treats the total you choose as authoritative. Ref
 
 Reading progress is stored locally using AsyncStorage. The app only contacts public catalogues when you search for a title or request a volume refresh.
 
-Use **Stats → Data & backup** to export the complete local shelf as a JSON backup. Importing a backup in another browser restores titles, ownership, progress, dates and descriptions after confirmation.
+Use **Stats → Data & backup** to export the complete local shelf as a JSON backup. Importing a backup in another browser restores titles, ownership, progress, dates, descriptions and uploaded covers after confirmation.
 
 Four saved colour presets are available under **Stats → Appearance**.
 

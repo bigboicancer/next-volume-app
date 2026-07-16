@@ -82,6 +82,7 @@ expectEqual(
 const backupFixture: LibraryTitle = {
   id: 'backup-test',
   title: 'Backup Test',
+  coverUrl: 'data:image/jpeg;base64,dGVzdA==',
   kind: 'manga',
   edition: 'english',
   ownedVolumes: 2,
@@ -101,6 +102,7 @@ expectEqual(restoredBackup[0]?.title, 'Backup Test', 'backup title restore');
 expectEqual(restoredBackup[0]?.ownedVolumeNumbers, [1, 3], 'backup ownership restore');
 expectEqual(restoredBackup[0]?.readVolumes, [1], 'backup progress restore');
 expectEqual(restoredBackup[0]?.onlineReadVolumes, [2], 'backup online progress restore');
+expectEqual(restoredBackup[0]?.coverUrl, backupFixture.coverUrl, 'uploaded cover backup restore');
 expectEqual(totalReadCount(backupFixture), 2, 'online reads count toward total progress');
 expectEqual(
   isCompletedOnline({ ...backupFixture, onlineReadVolumes: [2, 3] }),

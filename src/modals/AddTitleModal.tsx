@@ -17,6 +17,7 @@ import {
 } from 'react-native';
 
 import { FilterChip } from '../components/FilterChip';
+import { CoverImagePicker } from '../components/CoverImagePicker';
 import { lookupVolumeCounts, searchCatalog } from '../services/catalog';
 import { colors, radii, spacing } from '../theme';
 import {
@@ -122,6 +123,7 @@ export function AddTitleModal({
   const [readThrough, setReadThrough] = useState(0);
   const [manualTitle, setManualTitle] = useState('');
   const [manualDescription, setManualDescription] = useState('');
+  const [manualCoverUrl, setManualCoverUrl] = useState<string>();
   const [manualKind, setManualKind] = useState<MediaKind>('manga');
   const abortRef = useRef<AbortController | undefined>(undefined);
 
@@ -142,6 +144,7 @@ export function AddTitleModal({
     setReadThrough(0);
     setManualTitle('');
     setManualDescription('');
+    setManualCoverUrl(undefined);
     setManualKind('manga');
   }, [visible]);
 
@@ -264,6 +267,7 @@ export function AddTitleModal({
     onAdd({
       title: cleanTitle,
       description: briefDescription(manualDescription, 600),
+      coverUrl: manualCoverUrl,
       kind: manualKind,
       edition,
       ownedVolumes: ownedVolumeNumbers.length,
@@ -565,6 +569,8 @@ export function AddTitleModal({
               <Text style={styles.kicker}>MANUAL ENTRY</Text>
               <Text style={styles.heading}>Make your own checklist</Text>
               <Text style={styles.subtitle}>Useful for obscure editions, box sets and brand-new series.</Text>
+
+              <CoverImagePicker value={manualCoverUrl} onChange={setManualCoverUrl} />
 
               <Text style={styles.fieldLabel}>Title</Text>
               <TextInput

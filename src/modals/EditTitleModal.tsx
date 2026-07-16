@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { colors, radii, spacing } from '../theme';
+import { CoverImagePicker } from '../components/CoverImagePicker';
 import { Edition, LibraryTitle, ReadingStatus } from '../types';
 import {
   briefDescription,
@@ -34,6 +35,7 @@ export function EditTitleModal({
 }: EditTitleModalProps) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [coverUrl, setCoverUrl] = useState<string>();
   const [total, setTotal] = useState(1);
   const [ownedInput, setOwnedInput] = useState('');
   const [edition, setEdition] = useState<Edition>('english');
@@ -48,6 +50,7 @@ export function EditTitleModal({
     if (!title) return;
     setName(title.title);
     setDescription(title.description || '');
+    setCoverUrl(title.coverUrl);
     setTotal(title.totalVolumes);
     setOwnedInput(formatVolumeSelection(ownedVolumeNumbersOf(title)));
     setEdition(title.edition);
@@ -79,6 +82,7 @@ export function EditTitleModal({
     onSave({
       title: cleanName,
       description: briefDescription(description, 600),
+      coverUrl,
       totalVolumes: total,
       ownedVolumes: ownedVolumeNumbers.length,
       ownedVolumeNumbers,
@@ -131,6 +135,8 @@ export function EditTitleModal({
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
+            <CoverImagePicker value={coverUrl} onChange={setCoverUrl} />
+
             <Text style={styles.label}>Title</Text>
             <TextInput
               value={name}

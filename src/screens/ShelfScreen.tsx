@@ -140,10 +140,12 @@ export function ShelfScreen({
   }, [initialScrollPosition]);
 
   const nextUp = useMemo(
-    () =>
-      [...titles]
-        .filter((title) => title.status !== 'paused' && nextUnreadOwnedVolume(title))
-        .sort((a, b) => lastActivity(b) - lastActivity(a))[0],
+    () => {
+      const candidates = titles.filter(
+        (title) => title.status !== 'paused' && nextUnreadOwnedVolume(title),
+      );
+      return candidates[Math.floor(Math.random() * candidates.length)];
+    },
     [titles],
   );
 
