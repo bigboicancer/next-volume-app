@@ -37,6 +37,7 @@ export function SeriesCard({
   const completedOnline = isCompletedOnline(title);
   const onlineOnlyNext = ownedCount === 0 && Boolean(nextOnline);
   const caughtUpWithOwned = ownedCount > 0 && !next && Boolean(nextOnline);
+  const stackCaughtUpActions = width < 230;
 
   return (
     <Pressable
@@ -69,10 +70,24 @@ export function SeriesCard({
         <ProgressBar progress={progress} />
 
         {caughtUpWithOwned ? (
-          <View style={styles.caughtUpActions}>
-            <View style={[styles.nextButton, styles.splitButton, styles.caughtUpButton]}>
+          <View style={[styles.caughtUpActions, stackCaughtUpActions && styles.caughtUpActionsStacked]}>
+            <View
+              style={[
+                styles.nextButton,
+                styles.splitButton,
+                styles.caughtUpButton,
+                stackCaughtUpActions && styles.stackedButton,
+              ]}
+            >
               <Ionicons name="albums-outline" size={15} color={colors.accent} />
-              <Text style={[styles.nextLabel, styles.caughtUpLabel]} numberOfLines={2}>
+              <Text
+                style={[
+                  styles.nextLabel,
+                  styles.caughtUpLabel,
+                  stackCaughtUpActions && styles.stackedLabel,
+                ]}
+                numberOfLines={stackCaughtUpActions ? 1 : 2}
+              >
                 Owned caught up
               </Text>
             </View>
@@ -87,11 +102,19 @@ export function SeriesCard({
                 styles.nextButton,
                 styles.splitButton,
                 styles.readOnlineButton,
+                stackCaughtUpActions && styles.stackedButton,
                 pressed && styles.nextPressed,
               ]}
             >
               <Ionicons name="globe-outline" size={15} color={colors.blue} />
-              <Text style={[styles.nextLabel, styles.readOnlineLabel]} numberOfLines={2}>
+              <Text
+                style={[
+                  styles.nextLabel,
+                  styles.readOnlineLabel,
+                  stackCaughtUpActions && styles.stackedLabel,
+                ]}
+                numberOfLines={stackCaughtUpActions ? 1 : 2}
+              >
                 Read next online
               </Text>
             </Pressable>
@@ -248,11 +271,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 6,
   },
+  caughtUpActionsStacked: {
+    flexDirection: 'column',
+  },
   splitButton: {
     minWidth: 0,
     marginTop: 0,
     paddingHorizontal: 5,
     flex: 1,
+  },
+  stackedButton: {
+    width: '100%',
+    flexGrow: 0,
+    flexBasis: 'auto',
   },
   readOnlineButton: {
     borderWidth: 1,
@@ -284,5 +315,9 @@ const styles = StyleSheet.create({
     fontSize: 10,
     lineHeight: 12,
     textAlign: 'center',
+  },
+  stackedLabel: {
+    fontSize: 11,
+    lineHeight: 14,
   },
 });
