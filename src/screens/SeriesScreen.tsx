@@ -211,8 +211,8 @@ export function SeriesScreen({
                 <Ionicons name="globe-outline" size={21} color={colors.blue} />
               </View>
               <View style={styles.nextButtonCopy}>
-                <Text style={styles.onlineNextTitle}>Finish vol. {nextOnline} online</Text>
-                <Text style={styles.onlineNextText}>Mark volume {nextOnline} as read online.</Text>
+                <Text style={styles.onlineNextTitle}>Mark volume {nextOnline} read online</Text>
+                <Text style={styles.onlineNextText}>One tap, then the next volume is queued.</Text>
               </View>
               <Ionicons name="chevron-forward" size={21} color={colors.blue} />
             </Pressable>
@@ -241,8 +241,8 @@ export function SeriesScreen({
                   <Ionicons name="globe-outline" size={21} color={colors.blue} />
                 </View>
                 <View style={styles.nextButtonCopy}>
-                  <Text style={styles.onlineNextTitle}>Finish vol. {nextOnline} online</Text>
-                  <Text style={styles.onlineNextText}>Mark volume {nextOnline} as read online.</Text>
+                  <Text style={styles.onlineNextTitle}>Mark volume {nextOnline} read online</Text>
+                  <Text style={styles.onlineNextText}>One tap, then the next volume is queued.</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={21} color={colors.blue} />
               </Pressable>
