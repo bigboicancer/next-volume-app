@@ -155,9 +155,11 @@ function NextUpCarousel({
         showsHorizontalScrollIndicator={false}
         decelerationRate="fast"
         snapToInterval={width}
+        snapToAlignment="start"
         scrollEventThrottle={16}
-        onMomentumScrollEnd={(event) => {
-          setActiveIndex(Math.round(event.nativeEvent.contentOffset.x / width));
+        onScroll={(event) => {
+          const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
+          setActiveIndex((current) => current === nextIndex ? current : nextIndex);
         }}
       >
         {titles.map((title) => (
