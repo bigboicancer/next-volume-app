@@ -22,7 +22,7 @@ import {
   isCompletedOnline,
   kindLabel,
   nextUnreadOwnedVolume,
-  nextUnreadVolume,
+  nextUnreadUnownedVolume,
   ownedVolumeCount,
   ownedVolumeNumbersOf,
   onlineReadVolumesOf,
@@ -57,7 +57,7 @@ export function SeriesScreen({
   const [volumeMode, setVolumeMode] = useState<'read' | 'owned' | 'online'>('read');
   const progress = progressOf(title);
   const next = nextUnreadOwnedVolume(title);
-  const nextInSeries = nextUnreadVolume(title);
+  const nextOnline = nextUnreadUnownedVolume(title);
   const readSet = new Set(title.readVolumes);
   const ownedSet = new Set(ownedVolumeNumbersOf(title));
   const onlineSet = new Set(onlineReadVolumesOf(title));
@@ -194,15 +194,52 @@ export function SeriesScreen({
               </View>
               <Ionicons name="chevron-forward" size={21} color={colors.background} />
             </Pressable>
-          ) : nextInSeries ? (
-            <View style={styles.ownedCaughtUpBanner}>
-              <Ionicons name="albums-outline" size={29} color={colors.accent} />
-              <View style={styles.caughtUpCopy}>
-                <Text style={styles.ownedCaughtUpTitle}>Owned volumes caught up</Text>
-                <Text style={styles.ownedCaughtUpText}>
-                  Volume {nextInSeries} is next, but it is not currently marked as owned.
-                </Text>
+          ) : nextOnline && ownedCount === 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Mark volume ${nextOnline} read online`}
+              onPress={() => onToggleOnlineVolume(nextOnline)}
+              style={({ pressed }) => [styles.onlineNextButton, pressed && styles.pressed]}
+            >
+              <View style={styles.onlineNextIcon}>
+                <Ionicons name="globe-outline" size={21} color={colors.blue} />
               </View>
+              <View style={styles.nextButtonCopy}>
+                <Text style={styles.onlineNextTitle}>Read next online</Text>
+                <Text style={styles.onlineNextText}>Mark volume {nextOnline} as read online.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={21} color={colors.blue} />
+            </Pressable>
+          ) : nextOnline ? (
+            <View style={styles.caughtUpGroup}>
+              <View style={[styles.ownedCaughtUpBanner, styles.groupedCaughtUpBanner]}>
+                <Ionicons name="albums-outline" size={29} color={colors.accent} />
+                <View style={styles.caughtUpCopy}>
+                  <Text style={styles.ownedCaughtUpTitle}>Owned volumes caught up</Text>
+                  <Text style={styles.ownedCaughtUpText}>
+                    Every owned volume is read. Volume {nextOnline} is next and unowned.
+                  </Text>
+                </View>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`Mark volume ${nextOnline} read online`}
+                onPress={() => onToggleOnlineVolume(nextOnline)}
+                style={({ pressed }) => [
+                  styles.onlineNextButton,
+                  styles.groupedOnlineNextButton,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <View style={styles.onlineNextIcon}>
+                  <Ionicons name="globe-outline" size={21} color={colors.blue} />
+                </View>
+                <View style={styles.nextButtonCopy}>
+                  <Text style={styles.onlineNextTitle}>Read next online</Text>
+                  <Text style={styles.onlineNextText}>Mark volume {nextOnline} as read online.</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={21} color={colors.blue} />
+              </Pressable>
             </View>
           ) : (
             <View style={styles.finishedBanner}>
@@ -653,6 +690,15 @@ const styles = StyleSheet.create({
     borderColor: '#493E2D',
     backgroundColor: '#2E281F',
   },
+  caughtUpGroup: {
+    marginTop: spacing.lg,
+    marginBottom: spacing.xxl,
+    gap: spacing.sm,
+  },
+  groupedCaughtUpBanner: {
+    marginTop: 0,
+    marginBottom: 0,
+  },
   caughtUpCopy: {
     flex: 1,
   },
@@ -662,6 +708,42 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   ownedCaughtUpText: {
+    marginTop: 2,
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 16,
+  },
+  onlineNextButton: {
+    minHeight: 76,
+    marginTop: spacing.lg,
+    marginBottom: spacing.xxl,
+    paddingHorizontal: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.blueSoft,
+    backgroundColor: colors.blueSoft,
+  },
+  groupedOnlineNextButton: {
+    marginTop: 0,
+    marginBottom: 0,
+  },
+  onlineNextIcon: {
+    width: 38,
+    height: 38,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: radii.round,
+    backgroundColor: colors.surface,
+  },
+  onlineNextTitle: {
+    color: colors.blue,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  onlineNextText: {
     marginTop: 2,
     color: colors.textMuted,
     fontSize: 11,
